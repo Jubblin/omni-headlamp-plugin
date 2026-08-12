@@ -123,9 +123,9 @@ export function ConfigPatchesList() {
     <Table size="small">
       <TableHead>
         <TableRow>
+          <TableCell>Phase</TableCell>
           <TableCell>Name</TableCell>
           <TableCell>Owner</TableCell>
-          <TableCell>Phase</TableCell>
           <TableCell>Updated</TableCell>
         </TableRow>
       </TableHead>
@@ -137,9 +137,9 @@ export function ConfigPatchesList() {
             onClick={() => history.push(`/omni/config-patches/${encodeURIComponent(item.metadata.id)}`)}
             sx={{ cursor: 'pointer' }}
           >
+            <TableCell>{item.metadata.phase}</TableCell>
             <TableCell>{item.metadata.id}</TableCell>
             <TableCell>{item.metadata.owner || '—'}</TableCell>
-            <TableCell>{item.metadata.phase}</TableCell>
             <TableCell>{formatUpdated(item.metadata.updated)}</TableCell>
           </TableRow>
         ))}

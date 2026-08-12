@@ -129,9 +129,9 @@ export function MachineClassesList() {
     <Table size="small">
       <TableHead>
         <TableRow>
+          <TableCell>Phase</TableCell>
           <TableCell>Name</TableCell>
           <TableCell>Match Labels</TableCell>
-          <TableCell>Phase</TableCell>
           <TableCell>Updated</TableCell>
         </TableRow>
       </TableHead>
@@ -143,9 +143,9 @@ export function MachineClassesList() {
             onClick={() => history.push(`/omni/machine-classes/${encodeURIComponent(item.metadata.id)}`)}
             sx={{ cursor: 'pointer' }}
           >
+            <TableCell>{item.metadata.phase}</TableCell>
             <TableCell>{item.metadata.id}</TableCell>
             <TableCell>{item.spec.match_labels?.join(', ') || '—'}</TableCell>
-            <TableCell>{item.metadata.phase}</TableCell>
             <TableCell>{formatUpdated(item.metadata.updated)}</TableCell>
           </TableRow>
         ))}
