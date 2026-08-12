@@ -39,6 +39,22 @@ import { summarizeDiff, toDiffHunks } from './diffSummary';
 
 interface MachineClassSpec {
   match_labels?: string[];
+  /**
+   * VERIFIED against real production data (2026-08-12, omni.ad.bonkie.net's
+   * `proxmox-xl` MachineClass) -- previously flagged as unconfirmed ("not
+   * yet observed on the wire, do not guess its name") since no MachineClass
+   * with autoprovisioning set was available to inspect at the time
+   * MachineClassesList.tsx was written. Real shape, snake_case like
+   * match_labels: `provider_data` is itself a string containing embedded
+   * newline-escaped pseudo-YAML (e.g.
+   * `"cores: 8\nsockets: 2\nmemory: 49152\n..."`), not nested JSON -- shown
+   * and edited here as an opaque string, matching what's actually on the
+   * wire, rather than attempting to parse/re-serialize its contents.
+   */
+  auto_provision?: {
+    provider_id?: string;
+    provider_data?: string;
+  };
 }
 
 type LoadState =
