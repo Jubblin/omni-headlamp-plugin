@@ -18,6 +18,6 @@
 
 **Why:** The original `/office-hours` session's "who would you show this to" answer was team first, then the broader Omni/Talos community. This is the deferred second half of that goal.
 
-**Context:** Requires resolving RBAC/audit for real — the v1 shared-token model's "no per-user audit trail" is only an accepted risk for internal team use (see design doc RBAC/audit open question), not something responsible to hand to strangers managing their own Omni fleets without at least documenting the risk prominently, or resolving it via the per-user OIDC spike (Next Steps #3).
+**Context:** Requires resolving RBAC/audit for real — the v1 shared-token model's "no per-user audit trail" is only an accepted risk for internal team use. ~~Not something responsible to hand to strangers without resolving it via the per-user OIDC spike~~ — **the design for this is now resolved (2026-08-12, see design doc Next Steps #9): verified against real Omni source and live-tested against omni.ad.bonkie.net that Omni's own web UI already does per-user auth this way (Auth0 login → per-user ECDSA WebCrypto keypair → `AuthService.RegisterPublicKey` → real per-user audit attribution), and the plugin can reuse the same unsigned `AuthConfigs.omni.sidero.dev` discovery call already exercised. Design done; implementation (a second, parallel signing path alongside the existing PGP/service-account one) is still a real, unstarted engineering task.**
 
-**Depends on:** Next Steps #10 (internal team shipping) completing first, and the outcome of the RBAC/audit and per-user-OIDC spikes.
+**Depends on:** Next Steps #10 (internal team shipping) completing first, and implementing the now-designed per-user auth flow (Next Steps #9).
