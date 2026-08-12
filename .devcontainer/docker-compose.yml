@@ -1,0 +1,19 @@
+services:
+  omni-manager-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace
+    volumes:
+      # Live source, edited on the host.
+      - ..:/workspace
+      # Named volume so node_modules persists across runs and isn't shadowed
+      # by (or shadowing) anything on the host — this is what makes repeat
+      # builds fast without giving up reproducibility.
+      - omni-manager-node-modules:/workspace/node_modules
+    # Keeps the container alive for `docker compose exec` / VS Code attach;
+    # one-off CLI usage overrides this via `docker compose run --rm ... npm run <script>`.
+    command: sleep infinity
+
+volumes:
+  omni-manager-node-modules:
