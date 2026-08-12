@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { Alert, Box, Button, Link, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { loadServiceAccount } from './auth';
-import { listResources, OmniConnectionError, OmniResource } from './client';
+import { formatUpdated, listResources, OmniConnectionError, OmniResource } from './client';
 import { OmniPluginConfig } from './settings';
 import { ConnectPrompt } from './ConnectPrompt';
 
@@ -19,17 +19,6 @@ interface ConfigPatchSpec {
   // Verified against a real Omni instance's JSON output (2026-08-11): the
   // wire field is "compresseddata", not the proto-derived "compressed_data".
   compresseddata?: string;
-}
-
-// Go's zero-value time.Time serializes to this literal string rather than
-// being omitted -- a resource that's never been updated has a real,
-// non-empty "updated" field that isn't a useful timestamp. Found 2026-08-12
-// via CDP inspection of a real rendered row (showed "0001-01-01T00:00:00Z"
-// instead of the intended "—" fallback).
-const ZERO_TIME = '0001-01-01T00:00:00Z';
-
-function formatUpdated(updated: string | undefined): string {
-  return updated && updated !== ZERO_TIME ? updated : '—';
 }
 
 type LoadState =

@@ -168,6 +168,28 @@ export function isNetworkLevelFailure(err: unknown): boolean {
   return err.status === undefined || err.status === 502 || err.status === 408;
 }
 
+/**
+ * Known "not really set" sentinel values for a resource's `metadata.updated`
+ * timestamp -- Omni returns one of these for a resource that's never
+ * actually been updated, rather than omitting the field. Two different
+ * conventions have been observed on real data, not just one:
+ *   - Go's zero-value time.Time: "0001-01-01T00:00:00Z" (disposable
+ *     test-instance resources, found 2026-08-12 via CDP inspection).
+ *   - Unix epoch zero: "1970-01-01T00:00:00Z" (real production resources
+ *     on omni.ad.bonkie.net, found 2026-08-12 during a real-instance
+ *     dogfood pass -- only visible against real data; the disposable
+ *     instance's test resources never happened to hit this code path).
+ * Was originally a per-file duplicated ZERO_TIME constant checking only the
+ * first case; centralized here after the second sentinel turned up, so a
+ * third one (if it exists) only needs fixing in one place.
+ */
+const UNSET_TIMESTAMP_SENTINELS = new Set(['0001-01-01T00:00:00Z', '1970-01-01T00:00:00Z']);
+
+/** Formats a resource's metadata.updated for display, collapsing unset-sentinel values to "—". */
+export function formatUpdated(updated: string | undefined): string {
+  return updated && !UNSET_TIMESTAMP_SENTINELS.has(updated) ? updated : '—';
+}
+
 export class OmniNotConfiguredError extends Error {
   constructor() {
     super('Omni endpoint or service account key is not configured.');

@@ -29,7 +29,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
-import { deleteResourceFully, getResource, isNetworkLevelFailure, OmniConnectionError, OmniResource, updateResource } from './client';
+import { deleteResourceFully, formatUpdated, getResource, isNetworkLevelFailure, OmniConnectionError, OmniResource, updateResource } from './client';
 import { OmniPluginConfig } from './settings';
 import { summarizeDiff, toDiffHunks } from './diffSummary';
 
@@ -43,13 +43,6 @@ type LoadState =
   | { kind: 'connection-error'; message: string }
   | { kind: 'ready'; resource: OmniResource<ConfigPatchSpec> };
 
-// Mirrors ConfigPatchesList.tsx/MachineClassesList.tsx -- not yet extracted
-// to a shared module, matching the design doc's "don't force shared
-// extraction before it's earned" call for those two.
-const ZERO_TIME = '0001-01-01T00:00:00Z';
-function formatUpdated(updated: string | undefined): string {
-  return updated && updated !== ZERO_TIME ? updated : '—';
-}
 
 /** Apply-flow status, separate from the page-level LoadState. */
 type ApplyState =

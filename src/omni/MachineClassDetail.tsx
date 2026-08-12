@@ -33,7 +33,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
-import { deleteResourceFully, getResource, isNetworkLevelFailure, OmniConnectionError, OmniResource, updateResource } from './client';
+import { deleteResourceFully, formatUpdated, getResource, isNetworkLevelFailure, OmniConnectionError, OmniResource, updateResource } from './client';
 import { OmniPluginConfig } from './settings';
 import { summarizeDiff, toDiffHunks } from './diffSummary';
 
@@ -46,12 +46,6 @@ type LoadState =
   | { kind: 'connection-error'; message: string }
   | { kind: 'ready'; resource: OmniResource<MachineClassSpec> };
 
-// Mirrors ConfigPatchDetail.tsx/ConfigPatchesList.tsx/MachineClassesList.tsx
-// -- not yet extracted to a shared module, same "don't force it" call.
-const ZERO_TIME = '0001-01-01T00:00:00Z';
-function formatUpdated(updated: string | undefined): string {
-  return updated && updated !== ZERO_TIME ? updated : '—';
-}
 
 function specToText(spec: MachineClassSpec): string {
   return JSON.stringify(spec, null, 2);

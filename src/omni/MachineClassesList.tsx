@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { Alert, Box, Button, Link, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { loadServiceAccount } from './auth';
-import { listResources, OmniConnectionError, OmniResource } from './client';
+import { formatUpdated, listResources, OmniConnectionError, OmniResource } from './client';
 import { OmniPluginConfig } from './settings';
 import { ConnectPrompt } from './ConnectPrompt';
 
@@ -26,13 +26,6 @@ interface MachineClassSpec {
   // to inspect.
 }
 
-// Go's zero-value time.Time serializes to this literal string rather than
-// being omitted -- see the identical note in ConfigPatchesList.tsx.
-const ZERO_TIME = '0001-01-01T00:00:00Z';
-
-function formatUpdated(updated: string | undefined): string {
-  return updated && updated !== ZERO_TIME ? updated : '—';
-}
 
 type LoadState =
   | { kind: 'loading' }
