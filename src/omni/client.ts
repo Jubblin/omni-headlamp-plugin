@@ -24,6 +24,7 @@
  *    ResourceService call needs `runtime: "Omni"` alongside the signing
  *    headers (see signResourceServiceRequest in auth.ts).
  */
+import { createElement, ReactNode } from 'react';
 import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
 import { loadServiceAccount, signResourceServiceRequest } from './auth';
 
@@ -185,9 +186,20 @@ export function isNetworkLevelFailure(err: unknown): boolean {
  */
 const UNSET_TIMESTAMP_SENTINELS = new Set(['0001-01-01T00:00:00Z', '1970-01-01T00:00:00Z']);
 
-/** Formats a resource's metadata.updated for display, collapsing unset-sentinel values to "—". */
-export function formatUpdated(updated: string | undefined): string {
-  return updated && !UNSET_TIMESTAMP_SENTINELS.has(updated) ? updated : '—';
+/**
+ * Formats a resource's metadata.updated for display, collapsing unset-sentinel
+ * values to a centered "—" (real timestamps render as plain left-aligned
+ * text, unchanged). Returns a ReactNode rather than a plain string so the
+ * centering can travel with the value itself, rather than requiring every
+ * call site to know which values need it -- used directly inside a
+ * TableCell in the list views, and inline (as "Updated <value>") in the
+ * detail views' header.
+ */
+export function formatUpdated(updated: string | undefined): ReactNode {
+  if (updated && !UNSET_TIMESTAMP_SENTINELS.has(updated)) {
+    return updated;
+  }
+  return createElement('span', { style: { display: 'block', textAlign: 'center' } }, '—');
 }
 
 export class OmniNotConfiguredError extends Error {
