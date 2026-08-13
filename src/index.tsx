@@ -24,11 +24,23 @@ import { OmniSettingsComponent } from './omni/settings';
 
 // Top-level "Omni" sidebar section, no cluster context — Omni is a fleet-level
 // control plane above any single cluster (see design doc Problem Statement).
+//
+// Needs an explicit `url` even though it's just a category header: without
+// one, clicking it falls back to Headlamp's SidebarItem.getFullURLOnRoute(),
+// which resolves the first child by matching the child SIDEBAR entry's
+// `name` ('omni-config-patches') against a registered ROUTE's `name` --  a
+// different string here ('Omni Config Patches', below) since sidebar-entry
+// names and route names are separate, unrelated fields in Headlamp's API.
+// That lookup silently fails and falls through to home ('#/') with no
+// error -- confirmed by reproducing the click and inspecting the rendered
+// <a href> directly. An explicit `url` here is used as-is, bypassing that
+// lookup entirely.
 registerSidebarEntry({
   parent: null,
   name: 'omni',
   label: 'Omni',
   icon: 'mdi:server-network',
+  url: '/omni/config-patches',
   useClusterURL: false,
 });
 
