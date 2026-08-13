@@ -9,8 +9,7 @@ import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { Alert, Box, Button, Link, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { loadServiceAccount } from './auth';
-import { formatUpdated, listResources, OmniConnectionError, OmniResource } from './client';
+import { formatUpdated, hasActiveCredential, listResources, OmniConnectionError, OmniResource } from './client';
 import { ConnectPrompt } from './ConnectPrompt';
 import { OmniPluginConfig } from './settings';
 
@@ -41,7 +40,9 @@ export function MachineClassesList() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
   useEffect(() => {
-    loadServiceAccount().then(account => setConnected(account !== null));
+    // Either auth path counts -- a pasted service account key OR an active,
+    // non-expired Auth0/ECDSA session (see client.ts's hasActiveCredential).
+    hasActiveCredential().then(setConnected);
   }, []);
 
   async function load() {
