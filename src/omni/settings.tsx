@@ -7,8 +7,8 @@
  * this path; it's entered separately (see ConnectPrompt) and written directly
  * to sessionStorage via auth.ts, per the design doc's accepted-risk decision.
  */
-import { TextField, Typography } from '@mui/material';
 import type { PluginSettingsDetailsProps } from '@kinvolk/headlamp-plugin/lib';
+import { TextField, Typography } from '@mui/material';
 
 export interface OmniPluginConfig {
   endpoint?: string;

@@ -24,8 +24,8 @@
  *    ResourceService call needs `runtime: "Omni"` alongside the signing
  *    headers (see signResourceServiceRequest in auth.ts).
  */
-import { createElement, ReactNode } from 'react';
 import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
+import { createElement, ReactNode } from 'react';
 import { loadServiceAccount, signResourceServiceRequest } from './auth';
 
 export const OMNI_NAMESPACE_DEFAULT = 'default';

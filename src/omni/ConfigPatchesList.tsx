@@ -5,14 +5,14 @@
  * loading (skeleton) / connection-error (distinct from empty, red banner +
  * Retry) / empty (genuinely zero, no error styling) / populated.
  */
+import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
+import { Alert, Box, Button, Link, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Alert, Box, Button, Link, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { loadServiceAccount } from './auth';
 import { formatUpdated, listResources, OmniConnectionError, OmniResource } from './client';
-import { OmniPluginConfig } from './settings';
 import { ConnectPrompt } from './ConnectPrompt';
+import { OmniPluginConfig } from './settings';
 
 interface ConfigPatchSpec {
   data?: string;

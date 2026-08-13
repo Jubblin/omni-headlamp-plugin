@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,7 +20,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      # --ignore-scripts: verified safe for this dependency tree (esbuild's
+      # own postinstall isn't load-bearing here -- npm's optionalDependencies
+      # resolution alone correctly selects the platform binary; tsc/test/build
+      # all pass against a clean --ignore-scripts install). Otherwise every
+      # transitive dependency's install-time script runs unsandboxed in CI,
+      # which is real supply-chain exposure for no benefit in this tree.
+      - run: npm ci --ignore-scripts
 
       - run: npm run tsc
 
