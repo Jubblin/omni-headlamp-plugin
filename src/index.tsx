@@ -16,6 +16,9 @@
 
 import { registerPluginSettings, registerRoute, registerSidebarEntry } from '@kinvolk/headlamp-plugin/lib';
 import { SectionBox } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
+import { ClusterCreate } from './omni/ClusterCreate';
+import { ClusterDetail } from './omni/ClusterDetail';
+import { ClustersList } from './omni/ClustersList';
 import { ConfigPatchDetail } from './omni/ConfigPatchDetail';
 import { ConfigPatchesList } from './omni/ConfigPatchesList';
 import { MachineClassDetail } from './omni/MachineClassDetail';
@@ -36,12 +39,25 @@ import { OmniSettingsComponent } from './omni/settings';
 // error -- confirmed by reproducing the click and inspecting the rendered
 // <a href> directly. An explicit `url` here is used as-is, bypassing that
 // lookup entirely.
+//
+// Points at /omni/clusters now, not /omni/config-patches: Clusters is the
+// root of the resource graph (a ConfigPatch/MachineClass is a detail of, or
+// input to, a cluster -- see cluster.ts), so it's the more useful landing
+// page now that cluster lifecycle management exists.
 registerSidebarEntry({
   parent: null,
   name: 'omni',
   label: 'Omni',
   icon: 'mdi:server-network',
-  url: '/omni/config-patches',
+  url: '/omni/clusters',
+  useClusterURL: false,
+});
+
+registerSidebarEntry({
+  parent: 'omni',
+  name: 'omni-clusters',
+  label: 'Clusters',
+  url: '/omni/clusters',
   useClusterURL: false,
 });
 
@@ -59,6 +75,55 @@ registerSidebarEntry({
   label: 'Machine Classes',
   url: '/omni/machine-classes',
   useClusterURL: false,
+});
+
+registerRoute({
+  path: '/omni/clusters',
+  sidebar: 'omni-clusters',
+  name: 'Omni Clusters',
+  useClusterURL: false,
+  // See the identical note on the ConfigPatches list route below -- same
+  // react-router v5 Switch prefix-matching collision, this time with BOTH
+  // /omni/clusters/new and /omni/clusters/:id.
+  exact: true,
+  noAuthRequired: true,
+  component: () => (
+    <SectionBox title="Clusters">
+      <ClustersList />
+    </SectionBox>
+  ),
+});
+
+// Registered before the /omni/clusters/:id route below: react-router v5's
+// Switch is first-match-wins, and :id would otherwise match "new" as an id
+// (same segment count, no exact requirement needed for a match) and render
+// the detail view for a cluster literally named "new" instead of the create
+// form.
+registerRoute({
+  path: '/omni/clusters/new',
+  sidebar: 'omni-clusters',
+  name: 'Omni Cluster Create',
+  useClusterURL: false,
+  exact: true,
+  noAuthRequired: true,
+  component: () => (
+    <SectionBox title="Create Cluster">
+      <ClusterCreate />
+    </SectionBox>
+  ),
+});
+
+registerRoute({
+  path: '/omni/clusters/:id',
+  sidebar: 'omni-clusters',
+  name: 'Omni Cluster Detail',
+  useClusterURL: false,
+  noAuthRequired: true,
+  component: () => (
+    <SectionBox title="Cluster">
+      <ClusterDetail />
+    </SectionBox>
+  ),
 });
 
 // PR1 scope: read-only. Edit/diff/apply/delete land in PR2 per the design doc's
