@@ -3,8 +3,8 @@
  * to sessionStorage (auth.ts) -- never routed through Headlamp's generic
  * plugin settings persistence, which is not sessionStorage-scoped.
  */
-import { useState } from 'react';
 import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { useState } from 'react';
 import { parseServiceAccountKey, storeServiceAccountKey } from './auth';
 
 export function ConnectPrompt({ onConnected }: { onConnected: () => void }) {

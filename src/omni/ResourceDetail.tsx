@@ -24,10 +24,8 @@
  *    merge (a single free-text field); MachineClass's is a real
  *    JSON.parse/validate round-trip.
  */
-import { useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, Prompt, useHistory, useParams } from 'react-router-dom';
+import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { DiffEditor } from '@monaco-editor/react';
-import type { editor as MonacoEditorNS } from 'monaco-editor';
 import {
   Alert,
   Box,
@@ -45,7 +43,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
+import type { editor as MonacoEditorNS } from 'monaco-editor';
+import { useEffect, useRef, useState } from 'react';
+import { Link as RouterLink, Prompt, useHistory, useParams } from 'react-router-dom';
 import {
   deleteResourceFully,
   formatUpdated,
@@ -56,8 +56,8 @@ import {
   OmniResourceType,
   updateResource,
 } from './client';
-import { OmniPluginConfig } from './settings';
 import { summarizeDiff, toDiffHunks } from './diffSummary';
+import { OmniPluginConfig } from './settings';
 
 type LoadState<TSpec> =
   | { kind: 'loading' }
@@ -380,7 +380,6 @@ export function ResourceDetail<TSpec>({
           </DialogContentText>
           <TextField
             fullWidth
-            autoFocus
             placeholder={resource.metadata.id}
             value={deleteConfirmText}
             onChange={e => setDeleteConfirmText(e.target.value)}
