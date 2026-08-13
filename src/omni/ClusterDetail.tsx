@@ -90,7 +90,8 @@ export function ClusterDetail() {
       });
       history.push('/omni/clusters');
     } catch (err) {
-      const message = err instanceof OmniConnectionError ? err.message : err instanceof Error ? err.message : String(err);
+      // OmniConnectionError extends Error, so a single `instanceof Error` check covers both.
+      const message = err instanceof Error ? err.message : String(err);
       setDestroyState({ kind: 'error', message });
     }
   }

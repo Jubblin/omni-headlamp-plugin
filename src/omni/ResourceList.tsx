@@ -33,6 +33,9 @@ type LoadState<TSpec, TExtra> =
 
 const configStore = new ConfigStore<OmniPluginConfig>('omni-manager');
 
+/** Stable keys for the 4 loading-skeleton placeholder rows -- fixed, never reordered, so index-as-key would be safe too, but a real key avoids the lint rule entirely. */
+const SKELETON_ROW_KEYS = ['skeleton-row-1', 'skeleton-row-2', 'skeleton-row-3', 'skeleton-row-4'];
+
 export interface ResourceListProps<TSpec, TExtra = undefined> {
   resourceType: OmniResourceType;
   /** Defaults to 50, matching ConfigPatch/MachineClass's original limit. */
@@ -108,8 +111,8 @@ export function ResourceList<TSpec, TExtra = undefined>({
     return (
       <Box>
         <Skeleton variant="text" width={240} height={32} sx={{ mb: 2 }} />
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} variant="rectangular" height={40} sx={{ mb: 1 }} />
+        {SKELETON_ROW_KEYS.map(key => (
+          <Skeleton key={key} variant="rectangular" height={40} sx={{ mb: 1 }} />
         ))}
       </Box>
     );

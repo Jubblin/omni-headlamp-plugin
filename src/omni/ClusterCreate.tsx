@@ -117,7 +117,7 @@ export function ClusterCreate() {
 
   const controlPlaneMachineIds = parseMachineIds(controlPlaneMachinesText);
   const workerMachineIds = parseMachineIds(workerMachinesText);
-  const workerCount = workerCountText.trim() === '' ? NaN : Number(workerCountText);
+  const workerCount = workerCountText.trim() === '' ? Number.NaN : Number(workerCountText);
 
   let worker: MachineSelection | undefined;
   if (workerMode === 'explicit') {
