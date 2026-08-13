@@ -41,6 +41,7 @@
  * Omni-native resources, so this is always "Omni" for this plugin.
  */
 import * as openpgp from 'openpgp';
+import { grpcMetadataHeader, INCLUDED_HEADERS, uint8ArrayToBase64 } from './omniProxy';
 
 const SESSION_STORAGE_KEY = 'omni-manager.serviceAccountKey';
 const SIGNATURE_VERSION = 'siderov1';
@@ -49,26 +50,6 @@ const TIMESTAMP_HEADER = 'x-sidero-timestamp';
 const PAYLOAD_HEADER = 'x-sidero-payload';
 const SIGNATURE_HEADER = 'x-sidero-signature';
 const RUNTIME_HEADER = 'runtime';
-
-/**
- * The full set of metadata keys the server's signature verification checks
- * for a payload/actual-request match (message/payload.go: includedHeaders).
- * Order doesn't matter for correctness (this is just used to build a map),
- * but every one of these keys must be present in the signed payload's
- * `headers` object, valued `null` when the request doesn't set it.
- */
-const INCLUDED_HEADERS = [
-  TIMESTAMP_HEADER,
-  'nodes',
-  'selectors',
-  'fieldSelectors',
-  'runtime',
-  'context',
-  'cluster',
-  'namespace',
-  'uid',
-  'authorization',
-] as const;
 
 /** Shape of the base64-decoded OMNI_SERVICE_ACCOUNT_KEY JSON payload. */
 interface ServiceAccountKeyJSON {
@@ -219,16 +200,4 @@ export async function signResourceServiceRequest(
   grpcMethod: string
 ): Promise<Record<string, string>> {
   return signGRPCRequest(account, grpcMethod, { [RUNTIME_HEADER]: ['Omni'] });
-}
-
-function grpcMetadataHeader(name: string): string {
-  return `Grpc-Metadata-${name}`;
-}
-
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
 }

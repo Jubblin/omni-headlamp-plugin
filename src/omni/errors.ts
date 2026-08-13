@@ -95,6 +95,14 @@ export class OmniConnectionError extends Error {
   }
 }
 
+/** Thrown when no credential (service account or Auth0/ECDSA session) is currently usable -- distinct from a network/connection failure, see isNetworkLevelFailure. */
+export class OmniNotConfiguredError extends Error {
+  constructor() {
+    super('Omni endpoint or credentials are not configured (paste a service account key, or log in via Auth0).');
+    this.name = 'OmniNotConfiguredError';
+  }
+}
+
 /**
  * True when an OmniConnectionError represents a request that was sent but
  * never got a confirmed response -- a dropped connection, a Headlamp-side
@@ -118,6 +126,9 @@ export class OmniConnectionError extends Error {
  * defensive fallback for any other path that might not carry a status.
  */
 export function isNetworkLevelFailure(err: unknown): boolean {
+  if (err instanceof OmniNotConfiguredError) {
+    return false;
+  }
   if (!(err instanceof OmniConnectionError)) {
     return true;
   }

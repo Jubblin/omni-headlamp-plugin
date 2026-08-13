@@ -80,23 +80,3 @@ export async function confirmPublicKey(config: OmniEndpointConfig, publicKeyId: 
   );
 }
 
-/**
- * Blocks (server-side, up to 5 minutes per internal/backend/grpc/auth.go's
- * awaitPublicKeyConfirmationTimeout) until `publicKeyId` is confirmed by
- * some other actor -- the CLI flow's mechanism, not currently used by this
- * plugin's own UI (which confirms synchronously via its own ID token
- * instead, see userAuth.ts), but included here for completeness/parity with
- * the full AuthService surface.
- */
-export async function awaitPublicKeyConfirmation(config: OmniEndpointConfig, publicKeyId: string): Promise<void> {
-  await postToOmniGRPCGateway<unknown>(config, `/${AUTH_SERVICE}/AwaitPublicKeyConfirmation`, { public_key_id: publicKeyId }, {});
-}
-
-/** Revokes a previously-registered public key. Must be signed BY THAT SAME KEY -- see module doc. */
-export async function revokePublicKey(
-  config: OmniEndpointConfig,
-  publicKeyId: string,
-  signedHeaders: Record<string, string>
-): Promise<void> {
-  await postToOmniGRPCGateway<unknown>(config, `/${AUTH_SERVICE}/RevokePublicKey`, { public_key_id: publicKeyId }, signedHeaders);
-}

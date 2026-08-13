@@ -17,6 +17,38 @@ export interface OmniEndpointConfig {
 }
 
 /**
+ * The full set of metadata keys the server's signature verification checks
+ * for a payload/actual-request match (message/payload.go: includedHeaders).
+ * Shared by both signing schemes (auth.ts's PGP path and userAuth.ts's ECDSA
+ * path) -- see auth.ts's signGRPCRequest doc comment for the full verified
+ * writeup of why every key must be present, valued `null` when absent.
+ */
+export const INCLUDED_HEADERS = [
+  'x-sidero-timestamp',
+  'nodes',
+  'selectors',
+  'fieldSelectors',
+  'runtime',
+  'context',
+  'cluster',
+  'namespace',
+  'uid',
+  'authorization',
+] as const;
+
+export function grpcMetadataHeader(name: string): string {
+  return `Grpc-Metadata-${name}`;
+}
+
+export function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
  * POSTs a grpc-gateway JSON request through /externalproxy.
  *
  * @param config - Omni endpoint config (non-secret, from plugin settings).

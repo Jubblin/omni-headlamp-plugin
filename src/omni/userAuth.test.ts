@@ -152,9 +152,10 @@ describe('signGRPCRequestECDSA / signResourceServiceRequestECDSA', () => {
     expect(payload.method).toBe(grpcMethod);
     expect(payload.headers.runtime).toEqual(['Omni']);
     expect(payload.headers['x-sidero-timestamp']).toEqual([headers['Grpc-Metadata-x-sidero-timestamp']]);
-    // Headers with no value are omitted entirely (see this function's doc
-    // comment on why -- mirrors the real client's buildPayload).
-    expect(payload.headers).not.toHaveProperty('namespace');
+    // Headers with no value are still present, null-filled -- matching
+    // auth.ts's PGP scheme (see that module's doc for why the server's
+    // reflect.DeepEqual-based verification requires every key present).
+    expect(payload.headers.namespace).toBeNull();
   });
 
   it('the signature is a real, independently verifiable ECDSA signature over the exact payload bytes', async () => {

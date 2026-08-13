@@ -26,6 +26,7 @@
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { Alert, Button, Snackbar } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { loadServiceAccount } from './auth';
 import { getAuthConfig } from './client';
 import { OmniPluginConfig } from './settings';
 import { loadUserSession, startAuth0Login } from './userAuth';
@@ -42,26 +43,45 @@ export function SessionExpiryWarning() {
   const [state, setState] = useState<WarningState>({ kind: 'hidden' });
   const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function check() {
+      // A service-account (PGP) credential, if present, always wins over an
+      // Auth0/ECDSA session (see client.ts's module doc) -- that path has no
+      // expiry, so this warning would otherwise false-alarm about a session
+      // that isn't even the one being used to sign requests.
+      const account = await loadServiceAccount();
+      if (cancelled) {
+        return;
+      }
+      if (account) {
+        setState({ kind: 'hidden' });
+        setDismissed(false); // re-arm for the next time a per-user session actually needs a warning
+        return;
+      }
       const session = await loadUserSession();
       if (cancelled) {
         return;
       }
       if (!session) {
         setState({ kind: 'hidden' });
+        setDismissed(false);
         return;
       }
       const msLeft = session.keyExpirationTime - Date.now();
       if (msLeft <= 0) {
+        // Always re-arm on 'expired' -- a dismissed "expires soon" toast
+        // shouldn't also suppress the more urgent "has expired" one.
+        setDismissed(false);
         setState({ kind: 'expired' });
       } else if (msLeft <= WARNING_WINDOW_MS) {
         setState({ kind: 'warning', minutesLeft: Math.max(1, Math.round(msLeft / 60000)) });
       } else {
         setState({ kind: 'hidden' });
+        setDismissed(false);
       }
     }
 
@@ -93,14 +113,15 @@ export function SessionExpiryWarning() {
     }
   }
 
-  if (state.kind === 'hidden') {
+  if (state.kind === 'hidden' || dismissed) {
     return null;
   }
 
   return (
-    <Snackbar open anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
+    <Snackbar open anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} onClose={() => setDismissed(true)}>
       <Alert
         severity={state.kind === 'expired' ? 'error' : 'warning'}
+        onClose={() => setDismissed(true)}
         action={
           <Button color="inherit" size="small" disabled={reconnecting} onClick={handleReconnect}>
             {reconnecting ? 'Redirecting…' : 'Reconnect'}

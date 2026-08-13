@@ -37,16 +37,16 @@
  */
 import { createElement, ReactNode } from 'react';
 import { loadServiceAccount, signResourceServiceRequest } from './auth';
-import { isNetworkLevelFailure, OmniConnectionError } from './errors';
+import { isNetworkLevelFailure, OmniConnectionError, OmniNotConfiguredError } from './errors';
 import { postToOmniGRPCGateway } from './omniProxy';
-import { loadUserSession, signResourceServiceRequestECDSA } from './userAuth';
+import { hasValidUserSession, loadUserSession, signResourceServiceRequestECDSA } from './userAuth';
 
 // Re-exported unchanged so every existing `from './client'` import of these
 // keeps working -- see errors.ts's module doc for why the implementation
 // moved out (so authService.ts/userAuth.ts, the new per-user auth path, can
 // share the exact same error type without pulling in auth.ts's openpgp
 // import).
-export { OmniConnectionError, isNetworkLevelFailure };
+export { OmniConnectionError, OmniNotConfiguredError, isNetworkLevelFailure };
 
 export const OMNI_NAMESPACE_DEFAULT = 'default';
 
@@ -112,13 +112,6 @@ export function formatUpdated(updated: string | undefined): ReactNode {
   return createElement('span', { style: { display: 'block', textAlign: 'center' } }, '—');
 }
 
-export class OmniNotConfiguredError extends Error {
-  constructor() {
-    super('Omni endpoint or credentials are not configured (paste a service account key, or log in via Auth0).');
-    this.name = 'OmniNotConfiguredError';
-  }
-}
-
 export interface OmniClientConfig {
   /** Base URL of the Omni instance, e.g. https://omni.example.com */
   endpoint: string;
@@ -135,8 +128,7 @@ export async function hasActiveCredential(): Promise<boolean> {
   if (account) {
     return true;
   }
-  const session = await loadUserSession();
-  return !!session && session.keyExpirationTime > Date.now();
+  return hasValidUserSession();
 }
 
 /**

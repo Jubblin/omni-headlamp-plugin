@@ -21,10 +21,10 @@
  * (see the note atop client.test.ts, and errors.ts's module doc). Keeping
  * this file free of that import is what makes its crypto/signing/PKCE logic
  * directly unit-testable (userAuth.test.ts) without the same
- * vi.mock('./auth') workaround client.test.ts needs. The few wire-envelope
- * constants shared with auth.ts's PGP scheme (header names, signature
- * version, the included-headers list) are duplicated below rather than
- * imported, for the same reason -- see each constant's comment.
+ * vi.mock('./auth') workaround client.test.ts needs. The wire-envelope
+ * pieces shared with auth.ts's PGP scheme (header helpers, the
+ * included-headers list) live in omniProxy.ts, which is openpgp-free and
+ * already a shared dependency of both.
  *
  * Session storage uses IndexedDB, not sessionStorage (auth.ts's PGP path):
  * a non-extractable CryptoKeyPair has no string form by design (that's the
@@ -35,43 +35,18 @@
  * (frontend/src/methods/key.ts's useIDBKeyval('keyPair', ...)).
  */
 import { confirmPublicKey as confirmPublicKeyRPC, registerPublicKey } from './authService';
-import { OmniEndpointConfig } from './omniProxy';
+import { grpcMetadataHeader, INCLUDED_HEADERS, OmniEndpointConfig, uint8ArrayToBase64 } from './omniProxy';
 
 // ---------------------------------------------------------------------------
-// Shared wire-envelope constants (siderov1 scheme) -- intentionally
-// duplicated from auth.ts, not imported. See module doc for why.
+// Wire-envelope constants (siderov1 scheme) -- INCLUDED_HEADERS/
+// grpcMetadataHeader/uint8ArrayToBase64 are shared with auth.ts via
+// omniProxy.ts (see that module's doc).
 // ---------------------------------------------------------------------------
 
 const SIGNATURE_VERSION = 'siderov1';
 const TIMESTAMP_HEADER = 'x-sidero-timestamp';
 const PAYLOAD_HEADER = 'x-sidero-payload';
 const SIGNATURE_HEADER = 'x-sidero-signature';
-
-/** Same set auth.ts's INCLUDED_HEADERS covers -- see its comment for the source. */
-const INCLUDED_HEADERS = [
-  TIMESTAMP_HEADER,
-  'nodes',
-  'selectors',
-  'fieldSelectors',
-  'runtime',
-  'context',
-  'cluster',
-  'namespace',
-  'uid',
-  'authorization',
-] as const;
-
-function grpcMetadataHeader(name: string): string {
-  return `Grpc-Metadata-${name}`;
-}
-
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
 
 function base64UrlEncode(bytes: Uint8Array): string {
   return uint8ArrayToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -215,15 +190,10 @@ export async function clearUserSession(): Promise<void> {
  * Computes the Grpc-Metadata-prefixed auth headers for one ResourceService
  * call, signed with the session's ECDSA keypair. Same wire envelope as
  * auth.ts's signGRPCRequest (siderov1, x-sidero-* headers, a `{headers,
- * method}` JSON payload) -- but headers are included only when the request
- * actually carries a value, mirroring exactly how the real client builds it
- * (frontend/src/methods/interceptor.ts's buildPayload), rather than
- * auth.ts's explicit null-fill for every INCLUDED_HEADERS entry. Both encode
- * the same information from the server's reflect.DeepEqual-based
- * verification's perspective (a Go `map[string][]string` returns the same
- * zero value for an absent key as for one explicitly set to null) -- this
- * just mirrors the proven-working real client's own convention instead of
- * introducing a second one.
+ * method}` JSON payload), including the same explicit null-fill for every
+ * INCLUDED_HEADERS entry the request doesn't carry -- see auth.ts's
+ * signGRPCRequest doc comment for why the server's reflect.DeepEqual-based
+ * verification requires every key present.
  */
 export async function signGRPCRequestECDSA(
   session: OmniUserSession,
@@ -236,12 +206,10 @@ export async function signGRPCRequestECDSA(
     ...extraHeaders,
   };
 
-  const headers: Record<string, string[]> = {};
+  const headers: Record<string, string[] | null> = {};
   for (const key of INCLUDED_HEADERS) {
     const value = allValues[key];
-    if (value) {
-      headers[key] = [value];
-    }
+    headers[key] = value ? [value] : null;
   }
 
   const payloadJSON = JSON.stringify({ headers, method: grpcMethod });

@@ -91,6 +91,12 @@ export function ConnectPrompt({ onConnected }: { onConnected: () => void }) {
           onConnected();
         }
       } catch (err) {
+        // completeAuth0Login cleans the code/state params from the URL as its
+        // first step, but a failure here (e.g. getAuthConfig itself) can
+        // throw before that ever runs -- clean up here too, so a page refresh
+        // after a failed resume doesn't re-attempt redeeming the same
+        // one-time-use code.
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash);
         if (!cancelled) {
           setResumeError(err instanceof Error ? err.message : String(err));
           setResumingCallback(false);
