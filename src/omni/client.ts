@@ -30,7 +30,14 @@ import { loadServiceAccount, signResourceServiceRequest } from './auth';
 
 export const OMNI_NAMESPACE_DEFAULT = 'default';
 
-export type OmniResourceType = 'ConfigPatches.omni.sidero.dev' | 'MachineClasses.omni.sidero.dev';
+export type OmniResourceType =
+  | 'ConfigPatches.omni.sidero.dev'
+  | 'MachineClasses.omni.sidero.dev'
+  | 'Clusters.omni.sidero.dev'
+  | 'MachineSets.omni.sidero.dev'
+  | 'MachineSetNodes.omni.sidero.dev'
+  | 'ClusterStatuses.omni.sidero.dev'
+  | 'TalosVersions.omni.sidero.dev';
 
 export interface OmniMetadata {
   namespace: string;
@@ -325,6 +332,47 @@ export async function getResource<TSpec>(
 ): Promise<OmniResource<TSpec>> {
   const response = await callResourceService<{ body: string }>(config, 'Get', { namespace, type, id });
   return JSON.parse(response.body) as OmniResource<TSpec>;
+}
+
+export interface CreateResourceOptions {
+  namespace?: string;
+  labels?: Record<string, string>;
+  annotations?: Record<string, string>;
+}
+
+/**
+ * Creates a new resource. Used by the Cluster create flow (see cluster.ts) to
+ * build up a Cluster's resource graph one ResourceService.Create call at a
+ * time -- there is no dedicated "create a cluster" RPC; Omni's own frontend
+ * does the same thing (frontend/src/methods/cluster.ts's createResources).
+ *
+ * VERIFIED (2026-08-13) against the disposable instance, via the same signed
+ * ResourceService.Create call this function makes (POST .../Create with
+ * `{resource: {metadata, spec: JSON.stringify(spec)}}`, matching
+ * updateResource's spec-encoding below): a Cluster, MachineSet (both plain
+ * and with machine_allocation), and MachineSetNode created this way round-trip
+ * correctly on a subsequent Get -- confirms Create takes the same
+ * metadata/spec shape as Update, just without currentVersion.
+ */
+export async function createResource<TSpec>(
+  config: OmniClientConfig,
+  type: OmniResourceType,
+  id: string,
+  spec: TSpec,
+  options: CreateResourceOptions = {}
+): Promise<void> {
+  await callResourceService<void>(config, 'Create', {
+    resource: {
+      metadata: {
+        namespace: options.namespace ?? OMNI_NAMESPACE_DEFAULT,
+        type,
+        id,
+        labels: options.labels,
+        annotations: options.annotations,
+      },
+      spec: JSON.stringify(spec),
+    },
+  });
 }
 
 /**
