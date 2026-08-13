@@ -27,7 +27,6 @@ import {
   Radio,
   RadioGroup,
   Select,
-  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -43,6 +42,7 @@ import {
   TalosVersionSpec,
   validateClusterCreateInput,
 } from './cluster';
+import { ConnectionErrorAlert, DetailLoadingSkeleton } from './LoadingAndErrorStates';
 import { OmniPluginConfig } from './settings';
 
 interface MachineClassSpec {
@@ -157,20 +157,11 @@ export function ClusterCreate() {
   }
 
   if (state.kind === 'loading') {
-    return (
-      <Box>
-        <Skeleton variant="text" width={300} height={32} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={300} />
-      </Box>
-    );
+    return <DetailLoadingSkeleton />;
   }
 
   if (state.kind === 'connection-error') {
-    return (
-      <Alert severity="error" action={<Button color="inherit" size="small" onClick={load}>Retry</Button>}>
-        Can't reach Omni — {state.message}
-      </Alert>
-    );
+    return <ConnectionErrorAlert message={state.message} onRetry={load} />;
   }
 
   const { talosVersions, machineClasses } = state;

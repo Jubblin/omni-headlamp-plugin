@@ -38,7 +38,6 @@ import {
   DialogContentText,
   DialogTitle,
   Link,
-  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -57,6 +56,7 @@ import {
   updateResource,
 } from './client';
 import { summarizeDiff, toDiffHunks } from './diffSummary';
+import { ConnectionErrorAlert, DetailLoadingSkeleton } from './LoadingAndErrorStates';
 import { OmniPluginConfig } from './settings';
 
 type LoadState<TSpec> =
@@ -257,20 +257,11 @@ export function ResourceDetail<TSpec>({
   }
 
   if (state.kind === 'loading') {
-    return (
-      <Box>
-        <Skeleton variant="text" width={300} height={32} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={300} />
-      </Box>
-    );
+    return <DetailLoadingSkeleton />;
   }
 
   if (state.kind === 'connection-error') {
-    return (
-      <Alert severity="error" action={<Button color="inherit" size="small" onClick={load}>Retry</Button>}>
-        Can't reach Omni — {state.message}
-      </Alert>
-    );
+    return <ConnectionErrorAlert message={state.message} onRetry={load} />;
   }
 
   const { resource } = state;
