@@ -37,7 +37,7 @@
  */
 import { createElement, ReactNode } from 'react';
 import { loadServiceAccount, signResourceServiceRequest } from './auth';
-import { isNetworkLevelFailure, OmniConnectionError, OmniNotConfiguredError } from './errors';
+import { OmniConnectionError, OmniNotConfiguredError } from './errors';
 import { postToOmniGRPCGateway } from './omniProxy';
 import { hasValidUserSession, loadUserSession, signResourceServiceRequestECDSA } from './userAuth';
 
@@ -46,7 +46,8 @@ import { hasValidUserSession, loadUserSession, signResourceServiceRequestECDSA }
 // moved out (so authService.ts/userAuth.ts, the new per-user auth path, can
 // share the exact same error type without pulling in auth.ts's openpgp
 // import).
-export { OmniConnectionError, OmniNotConfiguredError, isNetworkLevelFailure };
+export { OmniConnectionError, OmniNotConfiguredError };
+export { isNetworkLevelFailure } from './errors';
 
 export const OMNI_NAMESPACE_DEFAULT = 'default';
 

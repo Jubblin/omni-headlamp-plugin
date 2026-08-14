@@ -80,7 +80,15 @@ export class OmniConnectionError extends Error {
   status?: number;
 
   constructor(cause: unknown) {
-    super(`Could not reach Omni: ${cause instanceof Error ? cause.message : String(cause)}`);
+    let causeMessage: string;
+    if (cause instanceof Error) {
+      causeMessage = cause.message;
+    } else if (typeof cause === 'object') {
+      causeMessage = JSON.stringify(cause);
+    } else {
+      causeMessage = String(cause);
+    }
+    super(`Could not reach Omni: ${causeMessage}`);
     this.name = 'OmniConnectionError';
     if (cause && typeof cause === 'object' && 'status' in cause && typeof (cause as { status: unknown }).status === 'number') {
       this.status = (cause as { status: number }).status;

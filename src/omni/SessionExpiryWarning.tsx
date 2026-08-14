@@ -117,6 +117,14 @@ export function SessionExpiryWarning() {
     return null;
   }
 
+  let message: string;
+  if (state.kind === 'expired') {
+    message = 'Your Omni sign-in has expired. Finish or save any in-progress edits, then reconnect.';
+  } else {
+    const plural = state.minutesLeft === 1 ? '' : 's';
+    message = `Your Omni sign-in expires in about ${state.minutesLeft} minute${plural}. Reconnect whenever it's convenient — this won't interrupt you automatically.`;
+  }
+
   return (
     <Snackbar open anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} onClose={() => setDismissed(true)}>
       <Alert
@@ -128,13 +136,7 @@ export function SessionExpiryWarning() {
           </Button>
         }
       >
-        {error
-          ? error
-          : state.kind === 'expired'
-            ? 'Your Omni sign-in has expired. Finish or save any in-progress edits, then reconnect.'
-            : `Your Omni sign-in expires in about ${state.minutesLeft} minute${
-                state.minutesLeft === 1 ? '' : 's'
-              }. Reconnect whenever it's convenient — this won't interrupt you automatically.`}
+        {error || message}
       </Alert>
     </Snackbar>
   );

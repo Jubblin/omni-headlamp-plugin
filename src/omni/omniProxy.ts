@@ -42,8 +42,8 @@ export function grpcMetadataHeader(name: string): string {
 
 export function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (const byte of bytes) {
+    binary += String.fromCodePoint(byte);
   }
   return btoa(binary);
 }
@@ -73,7 +73,11 @@ export async function postToOmniGRPCGateway<TResponse>(
   authHeaders: Record<string, string>
 ): Promise<TResponse> {
   const httpPath = `/api${grpcMethod}`;
-  const targetUrl = `${config.endpoint.replace(/\/+$/, '')}${httpPath}`;
+  let endpoint = config.endpoint;
+  while (endpoint.endsWith('/')) {
+    endpoint = endpoint.slice(0, -1);
+  }
+  const targetUrl = `${endpoint}${httpPath}`;
   const body = JSON.stringify(requestBody);
 
   let response: any;
