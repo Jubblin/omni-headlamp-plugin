@@ -1,5 +1,28 @@
 # Deploying omni-manager
 
+## Installing the plugin
+
+Headlamp has no plugin marketplace/catalog entry for this plugin — it's installed by building the bundle and placing it in Headlamp's plugins directory yourself:
+
+```bash
+npm install
+npm run build
+```
+
+This produces `dist/main.js` and `dist/package.json`. Copy `dist/` into a `omni-manager/` folder inside whichever plugins directory your Headlamp deployment reads from:
+
+- **Server/Docker**: the directory passed via the backend's `-plugins-dir` flag (defaults to `./plugins` relative to the server binary).
+- **Electron desktop app**: `~/Library/Application Support/Headlamp/plugins/omni-manager/` on macOS (platform-equivalent `Application Support`/`AppData` path elsewhere).
+
+```bash
+mkdir -p "<plugins-dir>/omni-manager"
+cp -r dist/* "<plugins-dir>/omni-manager/"
+```
+
+Headlamp picks up plugins on next launch (or immediately, if the deployment has `-watch-plugins-changes` / dev-mode plugin watching enabled).
+
+## Settings
+
 omni-manager needs **two separate, both-required settings** before it can reach your Omni instance. Missing either one produces the same symptom — the plugin's "Can't reach Omni" connection-error banner (with a Retry button), not a silent empty list — but the fix differs depending on which one is missing:
 
 1. **The Omni endpoint URL**, set per-Headlamp-deployment in the plugin's own settings panel (Headlamp → Settings → Plugins → omni-manager). This is where operators tell the plugin *which* Omni instance to talk to.
@@ -54,4 +77,12 @@ The mechanism is different here: there's no runtime settings UI for `-proxy-urls
 
 ## Plugin settings
 
-Once `-proxy-urls` is configured on whichever deployment you're running, set the matching endpoint in the plugin itself: Headlamp → Settings → Plugins → omni-manager → **Omni endpoint**. This is the only thing configured per-plugin; the service account key used to authenticate is intentionally **not** part of this settings panel — it's entered separately (and only ever held in that browser tab's session storage) via the "Connect to Omni" prompt shown on the Config Patches / Machine Classes pages. See `omnictl serviceaccount create <name>` for generating one.
+Once `-proxy-urls` is configured on whichever deployment you're running, set the matching endpoint in the plugin itself: Headlamp → Settings → Plugins → omni-manager → **Omni endpoint**. This is the only thing configured per-plugin.
+
+## Authentication
+
+The plugin supports two independent ways for a user to authenticate to Omni, both offered side by side on the "Connect to Omni" prompt shown on the Clusters / Config Patches / Machine Classes pages. Neither is configured in the plugin's settings panel — both are entered per-browser-tab at connect time.
+
+**Service account key** — a shared credential, generated via `omnictl serviceaccount create <name>`, pasted into the connect prompt and held only in that tab's session storage. No deployment-side setup beyond `-proxy-urls`.
+
+**Auth0 login (per-user)** — only offered if the target Omni instance's `AuthConfig` has Auth0 enabled; logs the user in via their own Omni account instead of a shared key, giving a real per-user audit trail. This needs **one more deployment-side setting your Omni admin controls, not this plugin**: the Auth0 application backing that Omni instance must have this Headlamp deployment's exact origin+path added to its **Allowed Callback URLs** (and **Allowed Web Origins**) — Auth0 rejects login redirects from URLs it doesn't recognize. The plugin's own "Connect to Omni" prompt shows the exact URL to register once Auth0 login is available for that instance; register a URL per distinct Headlamp route the prompt can render from (today: Clusters, Config Patches, Machine Classes) since the callback lands back on whichever route started the login.
