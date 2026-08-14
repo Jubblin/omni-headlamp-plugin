@@ -1,4 +1,11 @@
 {
   "extends": "./node_modules/@kinvolk/headlamp-plugin/config/plugins-tsconfig.json",
+  "compilerOptions": {
+    // String#replaceAll needs ES2021's lib types -- the base config's target
+    // (es2017) implies an es2017 lib by default. All target runtimes
+    // (evergreen browsers, Node 15+) already support it; this only widens
+    // the type-checking surface, not the actual build/transpile target.
+    "lib": ["ES2021", "DOM", "DOM.Iterable", "ScriptHost"]
+  },
   "include": ["./src/**/*"]
 }

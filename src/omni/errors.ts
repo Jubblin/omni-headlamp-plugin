@@ -83,10 +83,23 @@ export class OmniConnectionError extends Error {
     let causeMessage: string;
     if (cause instanceof Error) {
       causeMessage = cause.message;
-    } else if (typeof cause === 'object') {
-      causeMessage = JSON.stringify(cause);
     } else {
-      causeMessage = String(cause);
+      switch (typeof cause) {
+        case 'string':
+          causeMessage = cause;
+          break;
+        case 'number':
+        case 'boolean':
+        case 'bigint':
+        case 'symbol':
+          causeMessage = cause.toString();
+          break;
+        default:
+          // object, function, undefined -- JSON.stringify covers all of
+          // these usefully except a bare `undefined`, which it returns as
+          // the JS value `undefined` rather than a string.
+          causeMessage = JSON.stringify(cause) ?? 'undefined';
+      }
     }
     super(`Could not reach Omni: ${causeMessage}`);
     this.name = 'OmniConnectionError';

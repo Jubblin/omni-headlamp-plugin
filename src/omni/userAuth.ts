@@ -49,7 +49,7 @@ const PAYLOAD_HEADER = 'x-sidero-payload';
 const SIGNATURE_HEADER = 'x-sidero-signature';
 
 function base64UrlEncode(bytes: Uint8Array): string {
-  let base64 = uint8ArrayToBase64(bytes).split('+').join('-').split('/').join('_');
+  let base64 = uint8ArrayToBase64(bytes).replaceAll('+', '-').replaceAll('/', '_');
   while (base64.endsWith('=')) {
     base64 = base64.slice(0, -1);
   }
@@ -328,7 +328,7 @@ export function decodeJwtPayload(jwt: string): Record<string, unknown> {
   if (parts.length !== 3) {
     throw new Error('Not a valid JWT.');
   }
-  const base64 = parts[1].split('-').join('+').split('_').join('/');
+  const base64 = parts[1].replaceAll('-', '+').replaceAll('_', '/');
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
   const json = atob(padded);
   return JSON.parse(json);
