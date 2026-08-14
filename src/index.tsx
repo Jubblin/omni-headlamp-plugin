@@ -23,6 +23,7 @@ import { ConfigPatchDetail } from './omni/ConfigPatchDetail';
 import { ConfigPatchesList } from './omni/ConfigPatchesList';
 import { MachineClassDetail } from './omni/MachineClassDetail';
 import { MachineClassesList } from './omni/MachineClassesList';
+import { SessionExpiryWarning } from './omni/SessionExpiryWarning';
 import { OmniSettingsComponent } from './omni/settings';
 
 // Top-level "Omni" sidebar section, no cluster context — Omni is a fleet-level
@@ -146,6 +147,7 @@ registerRoute({
   component: () => (
     <SectionBox title="Config Patches">
       <ConfigPatchesList />
+      <SessionExpiryWarning />
     </SectionBox>
   ),
 });
@@ -160,6 +162,7 @@ registerRoute({
   component: () => (
     <SectionBox title="Config Patch">
       <ConfigPatchDetail />
+      <SessionExpiryWarning />
     </SectionBox>
   ),
 });
@@ -176,6 +179,7 @@ registerRoute({
   component: () => (
     <SectionBox title="Machine Classes">
       <MachineClassesList />
+      <SessionExpiryWarning />
     </SectionBox>
   ),
 });
@@ -190,6 +194,7 @@ registerRoute({
   component: () => (
     <SectionBox title="Machine Class">
       <MachineClassDetail />
+      <SessionExpiryWarning />
     </SectionBox>
   ),
 });

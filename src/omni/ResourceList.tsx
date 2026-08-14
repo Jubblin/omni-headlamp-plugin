@@ -19,8 +19,7 @@
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { Box, Skeleton, Table, TableBody, TableHead, TableRow } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { loadServiceAccount } from './auth';
-import { listResources, OmniConnectionError, OmniResource, OmniResourceType } from './client';
+import { hasActiveCredential, listResources, OmniConnectionError, OmniResource, OmniResourceType } from './client';
 import { ConnectPrompt } from './ConnectPrompt';
 import { ConnectionErrorAlert } from './LoadingAndErrorStates';
 import { OmniPluginConfig } from './settings';
@@ -63,7 +62,9 @@ export function ResourceList<TSpec, TExtra = undefined>({
   const [state, setState] = useState<LoadState<TSpec, TExtra>>({ kind: 'loading' });
 
   useEffect(() => {
-    loadServiceAccount().then(account => setConnected(account !== null));
+    // Either auth path counts -- a pasted service account key OR an active,
+    // non-expired Auth0/ECDSA session (see client.ts's hasActiveCredential).
+    hasActiveCredential().then(setConnected);
   }, []);
 
   async function load() {

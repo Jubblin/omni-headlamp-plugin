@@ -13,7 +13,15 @@ vi.mock('./auth', () => ({
   signResourceServiceRequest: vi.fn(),
 }));
 
-import { formatUpdated, isNetworkLevelFailure, OmniConnectionError } from './client';
+// Mocked so getAuthConfig's tests below can inspect exactly what request
+// omniProxy.ts's postToOmniGRPCGateway builds (target URL, headers, body)
+// without a real network call, and control the response it parses.
+const apiProxyRequestMock = vi.fn();
+vi.mock('@kinvolk/headlamp-plugin/lib', () => ({
+  ApiProxy: { request: (...args: unknown[]) => apiProxyRequestMock(...args) },
+}));
+
+import { formatUpdated, getAuthConfig, isNetworkLevelFailure, OmniConnectionError } from './client';
 
 describe('OmniConnectionError', () => {
   it('prefixes the cause message', () => {
@@ -132,5 +140,47 @@ describe('formatUpdated', () => {
     const result = formatUpdated('1970-01-01T00:00:00Z') as any;
     expect(result.type).toBe('span');
     expect(result.props.children).toBe('—');
+  });
+});
+
+// Confirms this plugin's own code produces the equivalent request the real
+// instance was proven to accept (see the verified example in this task's
+// design brief: `curl -sk https://omni.ad.bonkie.net/api/omni.resources.ResourceService/Get
+// -H "Grpc-Metadata-runtime: Omni" -d '{"namespace":"default","type":"AuthConfigs.omni.sidero.dev","id":"auth-config"}'`
+// returns the real Auth0 config) -- namely, ZERO signing headers and only
+// the Grpc-Metadata-runtime header, targeting the exact same method/body.
+describe('getAuthConfig', () => {
+  it('sends an unsigned Get for AuthConfigs.omni.sidero.dev/auth-config with only the runtime header', async () => {
+    apiProxyRequestMock.mockReset();
+    apiProxyRequestMock.mockResolvedValue({
+      body: JSON.stringify({
+        metadata: { namespace: 'default', type: 'AuthConfigs.omni.sidero.dev', id: 'auth-config', version: 1, owner: '', phase: 'running' },
+        spec: { auth0: { enabled: true, domain: 'example.auth0.com', client_id: 'abc123' } },
+      }),
+    });
+
+    const spec = await getAuthConfig({ endpoint: 'https://omni.example.com' });
+
+    expect(apiProxyRequestMock).toHaveBeenCalledTimes(1);
+    const [path, params] = apiProxyRequestMock.mock.calls[0];
+    expect(path).toBe('/externalproxy');
+    expect(params.method).toBe('POST');
+    expect(params.headers['Forward-To']).toBe('https://omni.example.com/api/omni.resources.ResourceService/Get');
+    expect(JSON.parse(params.body)).toEqual({ namespace: 'default', type: 'AuthConfigs.omni.sidero.dev', id: 'auth-config' });
+
+    // No siderov1 signing headers at all -- only runtime + the two headers
+    // every request carries (Forward-To, Content-Type).
+    const headerKeys = Object.keys(params.headers).sort();
+    expect(headerKeys).toEqual(['Content-Type', 'Forward-To', 'Grpc-Metadata-runtime']);
+    expect(params.headers['Grpc-Metadata-runtime']).toBe('Omni');
+
+    expect(spec).toEqual({ auth0: { enabled: true, domain: 'example.auth0.com', client_id: 'abc123' } });
+  });
+
+  it('surfaces a grpc-gateway error body as an OmniConnectionError', async () => {
+    apiProxyRequestMock.mockReset();
+    apiProxyRequestMock.mockResolvedValue({ code: 5, message: 'auth-config not found' });
+
+    await expect(getAuthConfig({ endpoint: 'https://omni.example.com' })).rejects.toThrow(OmniConnectionError);
   });
 });
