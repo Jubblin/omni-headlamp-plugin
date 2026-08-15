@@ -85,7 +85,7 @@ export async function exportPublicKeyPem(publicKey: CryptoKey): Promise<string> 
 }
 
 /** Signs `data` with the session's private key -- the ECDSA equivalent of auth.ts's openpgp.sign. */
-export async function signDetachedECDSA(data: string, keyPair: CryptoKeyPair): Promise<Uint8Array> {
+export async function signDetachedECDSA(data: string, keyPair: CryptoKeyPair): Promise<Uint8Array<ArrayBuffer>> {
   const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, keyPair.privateKey, new TextEncoder().encode(data));
   return new Uint8Array(signature);
 }
