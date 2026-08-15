@@ -4,7 +4,7 @@
 # @kinvolk/headlamp-plugin's CLI (yargs ESM/CJS interop) and rollup's
 # platform-specific native bindings. Node 22 here is the version this
 # project has actually been verified to build under.
-FROM node:22-bookworm-slim
+FROM node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436
 
 WORKDIR /workspace
 
