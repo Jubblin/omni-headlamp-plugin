@@ -31,10 +31,10 @@ jobs:
         working-directory: ./
 
     steps:
-      - name: Require master branch
+      - name: Require main branch
         run: |
-          if [ "$GITHUB_REF" != "refs/heads/master" ]; then
-            echo "::error::Release workflow must be dispatched from master."
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Release workflow must be dispatched from main."
             exit 1
           fi
 
