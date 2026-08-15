@@ -2,13 +2,14 @@
 #
 # The host machine may run a newer Node (e.g. 26.x) that breaks
 # @kinvolk/headlamp-plugin's CLI (yargs ESM/CJS interop) and rollup's
-# platform-specific native bindings. Node 22 here is the version this
-# project has actually been verified to build under.
+# platform-specific native bindings. Node 24 here is a version this
+# project has actually been verified to build under (install/tsc/lint/
+# test/build all pass) -- re-verify before bumping past it.
 #
 # Pinned by digest only (not tag+digest) -- the digest already fully pins
 # the image; this comment carries the human-readable tag it corresponds to.
-# Tag: node:22-bookworm-slim
-FROM node@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436
+# Tag: node:24-bookworm-slim
+FROM node@sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03
 
 WORKDIR /workspace
 
