@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { registerPluginSettings, registerRoute, registerSidebarEntry } from '@kinvolk/headlamp-plugin/lib';
+import {
+  registerPluginSettings,
+  registerRoute,
+  registerSidebarEntry,
+} from '@kinvolk/headlamp-plugin/lib';
 import { SectionBox } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
 import { ClusterCreate } from './omni/ClusterCreate';
 import { ClusterDetail } from './omni/ClusterDetail';

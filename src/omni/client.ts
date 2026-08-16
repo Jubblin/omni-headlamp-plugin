@@ -144,7 +144,9 @@ export async function hasActiveCredential(): Promise<boolean> {
  * ResourceService request with it -- see this module's doc comment for the
  * "service account always wins if present" precedence rule.
  */
-async function signActiveResourceServiceRequest(grpcMethod: string): Promise<Record<string, string>> {
+async function signActiveResourceServiceRequest(
+  grpcMethod: string
+): Promise<Record<string, string>> {
   const account = await loadServiceAccount();
   if (account) {
     return signResourceServiceRequest(account, grpcMethod);
@@ -166,7 +168,11 @@ async function signActiveResourceServiceRequest(grpcMethod: string): Promise<Rec
  * @param rpcMethod - e.g. "Get", "List", "Update", "Delete", "Teardown".
  * @param requestBody - JSON-serializable request message.
  */
-async function callResourceService<TResponse>(config: OmniClientConfig, rpcMethod: string, requestBody: unknown): Promise<TResponse> {
+async function callResourceService<TResponse>(
+  config: OmniClientConfig,
+  rpcMethod: string,
+  requestBody: unknown
+): Promise<TResponse> {
   // Two different strings, both required: the HTTP wire path (with /api/,
   // for grpc-gateway routing, added by postToOmniGRPCGateway) and the plain
   // gRPC method path (signed, per auth.ts's verified scheme -- no /api/
@@ -263,7 +269,11 @@ export async function getResource<TSpec>(
   id: string,
   namespace = OMNI_NAMESPACE_DEFAULT
 ): Promise<OmniResource<TSpec>> {
-  const response = await callResourceService<{ body: string }>(config, 'Get', { namespace, type, id });
+  const response = await callResourceService<{ body: string }>(config, 'Get', {
+    namespace,
+    type,
+    id,
+  });
   return JSON.parse(response.body) as OmniResource<TSpec>;
 }
 
@@ -326,7 +336,10 @@ export async function updateResource<TSpec>(
     // version"). The read and write encodings are asymmetric; coerce both.
     currentVersion: String(resource.metadata.version),
     resource: {
-      metadata: { ...resource.metadata, version: String(resource.metadata.version) as unknown as number },
+      metadata: {
+        ...resource.metadata,
+        version: String(resource.metadata.version) as unknown as number,
+      },
       // Only spec changes are ever sent; metadata fields other than version
       // (id, owner, phase, finalizers, ...) are round-tripped unchanged --
       // see design doc's round-trip-safety finding.

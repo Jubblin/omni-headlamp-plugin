@@ -49,7 +49,9 @@ export function MachineClassesList() {
         <TableRow
           key={item.metadata.id}
           hover
-          onClick={() => history.push(`/omni/machine-classes/${encodeURIComponent(item.metadata.id)}`)}
+          onClick={() =>
+            history.push(`/omni/machine-classes/${encodeURIComponent(item.metadata.id)}`)
+          }
           sx={{ cursor: 'pointer' }}
         >
           <TableCell>{item.metadata.phase}</TableCell>

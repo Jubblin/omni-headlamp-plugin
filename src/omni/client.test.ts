@@ -51,7 +51,10 @@ describe('OmniConnectionError', () => {
 
   describe('fromGRPCGatewayError', () => {
     it('maps gRPC code 6 (AlreadyExists / conflict) to HTTP 409', () => {
-      const err = OmniConnectionError.fromGRPCGatewayError({ code: 6, message: 'update conflict: expected version 1' });
+      const err = OmniConnectionError.fromGRPCGatewayError({
+        code: 6,
+        message: 'update conflict: expected version 1',
+      });
       expect(err.status).toBe(409);
       expect(err.message).toBe('Could not reach Omni: update conflict: expected version 1');
     });
@@ -62,7 +65,10 @@ describe('OmniConnectionError', () => {
     });
 
     it('maps gRPC code 16 (Unauthenticated) to HTTP 401', () => {
-      const err = OmniConnectionError.fromGRPCGatewayError({ code: 16, message: 'invalid signature' });
+      const err = OmniConnectionError.fromGRPCGatewayError({
+        code: 16,
+        message: 'invalid signature',
+      });
       expect(err.status).toBe(401);
     });
 
@@ -154,7 +160,14 @@ describe('getAuthConfig', () => {
     apiProxyRequestMock.mockReset();
     apiProxyRequestMock.mockResolvedValue({
       body: JSON.stringify({
-        metadata: { namespace: 'default', type: 'AuthConfigs.omni.sidero.dev', id: 'auth-config', version: 1, owner: '', phase: 'running' },
+        metadata: {
+          namespace: 'default',
+          type: 'AuthConfigs.omni.sidero.dev',
+          id: 'auth-config',
+          version: 1,
+          owner: '',
+          phase: 'running',
+        },
         spec: { auth0: { enabled: true, domain: 'example.auth0.com', client_id: 'abc123' } },
       }),
     });
@@ -165,8 +178,14 @@ describe('getAuthConfig', () => {
     const [path, params] = apiProxyRequestMock.mock.calls[0];
     expect(path).toBe('/externalproxy');
     expect(params.method).toBe('POST');
-    expect(params.headers['Forward-To']).toBe('https://omni.example.com/api/omni.resources.ResourceService/Get');
-    expect(JSON.parse(params.body)).toEqual({ namespace: 'default', type: 'AuthConfigs.omni.sidero.dev', id: 'auth-config' });
+    expect(params.headers['Forward-To']).toBe(
+      'https://omni.example.com/api/omni.resources.ResourceService/Get'
+    );
+    expect(JSON.parse(params.body)).toEqual({
+      namespace: 'default',
+      type: 'AuthConfigs.omni.sidero.dev',
+      id: 'auth-config',
+    });
 
     // No siderov1 signing headers at all -- only runtime + the two headers
     // every request carries (Forward-To, Content-Type).
@@ -174,13 +193,17 @@ describe('getAuthConfig', () => {
     expect(headerKeys).toEqual(['Content-Type', 'Forward-To', 'Grpc-Metadata-runtime']);
     expect(params.headers['Grpc-Metadata-runtime']).toBe('Omni');
 
-    expect(spec).toEqual({ auth0: { enabled: true, domain: 'example.auth0.com', client_id: 'abc123' } });
+    expect(spec).toEqual({
+      auth0: { enabled: true, domain: 'example.auth0.com', client_id: 'abc123' },
+    });
   });
 
   it('surfaces a grpc-gateway error body as an OmniConnectionError', async () => {
     apiProxyRequestMock.mockReset();
     apiProxyRequestMock.mockResolvedValue({ code: 5, message: 'auth-config not found' });
 
-    await expect(getAuthConfig({ endpoint: 'https://omni.example.com' })).rejects.toThrow(OmniConnectionError);
+    await expect(getAuthConfig({ endpoint: 'https://omni.example.com' })).rejects.toThrow(
+      OmniConnectionError
+    );
   });
 });

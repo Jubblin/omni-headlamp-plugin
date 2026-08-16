@@ -31,7 +31,13 @@
  *    matching MachineClass's already-verified match_labels (see
  *    MachineClassesList.tsx) and contradicting nothing observed there.
  */
-import { createResource, getResource, OmniConnectionError, OmniResourceType, teardownResource } from './client';
+import {
+  createResource,
+  getResource,
+  OmniConnectionError,
+  OmniResourceType,
+  teardownResource,
+} from './client';
 
 export const LABEL_CLUSTER = 'omni.sidero.dev/cluster';
 export const LABEL_ROLE_CONTROLPLANE = 'omni.sidero.dev/role-controlplane';
@@ -166,7 +172,10 @@ export function buildClusterResourceGraph(input: ClusterCreateInput): PlannedRes
   resources.push({
     type: 'Clusters.omni.sidero.dev',
     id: input.name,
-    spec: { talos_version: input.talosVersion, kubernetes_version: input.kubernetesVersion } satisfies ClusterSpec,
+    spec: {
+      talos_version: input.talosVersion,
+      kubernetes_version: input.kubernetesVersion,
+    } satisfies ClusterSpec,
   });
 
   const cpId = controlPlaneMachineSetId(input.name);
@@ -180,7 +189,11 @@ export function buildClusterResourceGraph(input: ClusterCreateInput): PlannedRes
     resources.push({
       type: 'MachineSetNodes.omni.sidero.dev',
       id: machineId,
-      labels: { [LABEL_CLUSTER]: input.name, [LABEL_MACHINE_SET]: cpId, [LABEL_ROLE_CONTROLPLANE]: '' },
+      labels: {
+        [LABEL_CLUSTER]: input.name,
+        [LABEL_MACHINE_SET]: cpId,
+        [LABEL_ROLE_CONTROLPLANE]: '',
+      },
       spec: {} satisfies MachineSetNodeSpec,
     });
   }
@@ -208,14 +221,20 @@ export function buildClusterResourceGraph(input: ClusterCreateInput): PlannedRes
         resources.push({
           type: 'MachineSetNodes.omni.sidero.dev',
           id: machineId,
-          labels: { [LABEL_CLUSTER]: input.name, [LABEL_MACHINE_SET]: workerId, [LABEL_ROLE_WORKER]: '' },
+          labels: {
+            [LABEL_CLUSTER]: input.name,
+            [LABEL_MACHINE_SET]: workerId,
+            [LABEL_ROLE_WORKER]: '',
+          },
           spec: {} satisfies MachineSetNodeSpec,
         });
       }
     }
   }
 
-  return [...resources].sort((a, b) => (CANONICAL_RESOURCE_ORDER[a.type] ?? 0) - (CANONICAL_RESOURCE_ORDER[b.type] ?? 0));
+  return [...resources].sort(
+    (a, b) => (CANONICAL_RESOURCE_ORDER[a.type] ?? 0) - (CANONICAL_RESOURCE_ORDER[b.type] ?? 0)
+  );
 }
 
 export interface ClusterFormErrors {
@@ -241,7 +260,10 @@ function looksLikeVersion(v: string): boolean {
  * the user sees it before submitting, not just as a raw server error
  * afterward).
  */
-export function validateClusterCreateInput(input: ClusterCreateInput, compatibleKubernetesVersions: string[]): ClusterFormErrors {
+export function validateClusterCreateInput(
+  input: ClusterCreateInput,
+  compatibleKubernetesVersions: string[]
+): ClusterFormErrors {
   const errors: ClusterFormErrors = {};
 
   if (!input.name) {
@@ -260,8 +282,13 @@ export function validateClusterCreateInput(input: ClusterCreateInput, compatible
     errors.kubernetesVersion = 'Kubernetes version is required.';
   } else if (!looksLikeVersion(input.kubernetesVersion)) {
     errors.kubernetesVersion = 'Kubernetes version should be in semver format.';
-  } else if (compatibleKubernetesVersions.length > 0 && !compatibleKubernetesVersions.includes(input.kubernetesVersion)) {
-    errors.kubernetesVersion = `Kubernetes ${input.kubernetesVersion} is not compatible with Talos ${input.talosVersion || '(selected version)'}.`;
+  } else if (
+    compatibleKubernetesVersions.length > 0 &&
+    !compatibleKubernetesVersions.includes(input.kubernetesVersion)
+  ) {
+    errors.kubernetesVersion = `Kubernetes ${
+      input.kubernetesVersion
+    } is not compatible with Talos ${input.talosVersion || '(selected version)'}.`;
   }
 
   const cpCount = input.controlPlane.machineIds.length;
@@ -304,7 +331,9 @@ export async function createCluster(
   for (let i = 0; i < resources.length; i++) {
     const resource = resources[i];
     onProgress?.(resource, i, resources.length);
-    await createResource(config, resource.type, resource.id, resource.spec, { labels: resource.labels });
+    await createResource(config, resource.type, resource.id, resource.spec, {
+      labels: resource.labels,
+    });
   }
 }
 
@@ -342,7 +371,11 @@ const DESTROY_POLL_TIMEOUT_MS = 5 * 60 * 1000;
  * calling Delete itself (client.ts has no watch/streaming mechanism, so
  * polling is the pragmatic choice here, not a compromise).
  */
-export async function destroyCluster(config: ClusterConfig, clusterName: string, onPoll?: (attempt: number) => void): Promise<void> {
+export async function destroyCluster(
+  config: ClusterConfig,
+  clusterName: string,
+  onPoll?: (attempt: number) => void
+): Promise<void> {
   await teardownResource(config, 'Clusters.omni.sidero.dev', clusterName);
 
   const deadline = Date.now() + DESTROY_POLL_TIMEOUT_MS;
@@ -365,6 +398,8 @@ export async function destroyCluster(config: ClusterConfig, clusterName: string,
   }
 
   throw new Error(
-    `Cluster "${clusterName}" is still tearing down after ${Math.round(DESTROY_POLL_TIMEOUT_MS / 1000)}s -- its finalizers haven't cleared yet. It should finish eventually; check back, or inspect it directly (e.g. via omnictl).`
+    `Cluster "${clusterName}" is still tearing down after ${Math.round(
+      DESTROY_POLL_TIMEOUT_MS / 1000
+    )}s -- its finalizers haven't cleared yet. It should finish eventually; check back, or inspect it directly (e.g. via omnictl).`
   );
 }

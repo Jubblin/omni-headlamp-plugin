@@ -72,7 +72,11 @@ type ApplyState =
   | { kind: 'checking' } // network dropped mid-apply -- re-fetching to find out what actually happened
   | { kind: 'error'; message: string };
 
-type DeleteState = { kind: 'idle' } | { kind: 'confirming' } | { kind: 'deleting' } | { kind: 'error'; message: string };
+type DeleteState =
+  | { kind: 'idle' }
+  | { kind: 'confirming' }
+  | { kind: 'deleting' }
+  | { kind: 'error'; message: string };
 
 const configStore = new ConfigStore<OmniPluginConfig>('omni-manager');
 
@@ -124,7 +128,10 @@ export function ResourceDetail<TSpec>({
   async function fetchResource(): Promise<OmniResource<TSpec> | null> {
     const config = configStore.get();
     if (!config?.endpoint) {
-      setState({ kind: 'connection-error', message: 'Omni endpoint is not configured (see plugin settings).' });
+      setState({
+        kind: 'connection-error',
+        message: 'Omni endpoint is not configured (see plugin settings).',
+      });
       return null;
     }
     try {
@@ -211,15 +218,26 @@ export function ResourceDetail<TSpec>({
         setApplyState({ kind: 'checking' });
         try {
           const config2 = configStore.get();
-          const refetched = await getResource<TSpec>({ endpoint: config2!.endpoint! }, resourceType, id);
+          const refetched = await getResource<TSpec>(
+            { endpoint: config2!.endpoint! },
+            resourceType,
+            id
+          );
           if (specToText(refetched.spec) === modifiedText) {
             setState({ kind: 'ready', resource: refetched });
             setApplyState({ kind: 'idle' });
           } else {
-            setApplyState({ kind: 'error', message: `Couldn't confirm the change went through — the ${resourceNoun} still shows the old content. Try again.` });
+            setApplyState({
+              kind: 'error',
+              message: `Couldn't confirm the change went through — the ${resourceNoun} still shows the old content. Try again.`,
+            });
           }
         } catch {
-          setApplyState({ kind: 'error', message: "Couldn't confirm the change went through, and the follow-up check also failed. Try again." });
+          setApplyState({
+            kind: 'error',
+            message:
+              "Couldn't confirm the change went through, and the follow-up check also failed. Try again.",
+          });
         }
         return;
       }
@@ -291,10 +309,19 @@ export function ResourceDetail<TSpec>({
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <Button
           variant="contained"
-          disabled={!dirty || !!parseErrorMessage || applyState.kind === 'applying' || applyState.kind === 'checking'}
+          disabled={
+            !dirty ||
+            !!parseErrorMessage ||
+            applyState.kind === 'applying' ||
+            applyState.kind === 'checking'
+          }
           onClick={handleApply}
         >
-          {applyState.kind === 'applying' ? 'Applying…' : applyState.kind === 'checking' ? 'Checking…' : 'Apply'}
+          {applyState.kind === 'applying'
+            ? 'Applying…'
+            : applyState.kind === 'checking'
+            ? 'Checking…'
+            : 'Apply'}
         </Button>
         <Button
           variant="outlined"
@@ -311,7 +338,15 @@ export function ResourceDetail<TSpec>({
         </Alert>
       )}
       {applyState.kind === 'conflict' && (
-        <Alert severity="warning" sx={{ mb: 2 }} action={<Button color="inherit" size="small" onClick={handleReloadAfterConflict}>Reload</Button>}>
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={handleReloadAfterConflict}>
+              Reload
+            </Button>
+          }
+        >
           {applyState.message}
         </Alert>
       )}
@@ -330,13 +365,20 @@ export function ResourceDetail<TSpec>({
         {dirty ? summary : 'No changes.'}
       </Typography>
 
-      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+      <Box
+        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}
+      >
         <DiffEditor
           height="400px"
           language={language}
           original={originalText}
           modified={modifiedText}
-          options={{ renderSideBySide: false, readOnly: false, originalEditable: false, automaticLayout: true }}
+          options={{
+            renderSideBySide: false,
+            readOnly: false,
+            originalEditable: false,
+            automaticLayout: true,
+          }}
           onMount={(diffEditor, monacoInstance) => {
             diffEditorRef.current = diffEditor;
             const modifiedModel = diffEditor.getModifiedEditor();
@@ -363,7 +405,10 @@ export function ResourceDetail<TSpec>({
         />
       </Box>
 
-      <Dialog open={deleteState.kind === 'confirming' || deleteState.kind === 'deleting'} onClose={() => setDeleteState({ kind: 'idle' })}>
+      <Dialog
+        open={deleteState.kind === 'confirming' || deleteState.kind === 'deleting'}
+        onClose={() => setDeleteState({ kind: 'idle' })}
+      >
         <DialogTitle>Delete {resource.metadata.id}?</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
@@ -378,7 +423,10 @@ export function ResourceDetail<TSpec>({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteState({ kind: 'idle' })} disabled={deleteState.kind === 'deleting'}>
+          <Button
+            onClick={() => setDeleteState({ kind: 'idle' })}
+            disabled={deleteState.kind === 'deleting'}
+          >
             Cancel
           </Button>
           <Button

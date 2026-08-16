@@ -103,7 +103,12 @@ export class OmniConnectionError extends Error {
     }
     super(`Could not reach Omni: ${causeMessage}`);
     this.name = 'OmniConnectionError';
-    if (cause && typeof cause === 'object' && 'status' in cause && typeof (cause as { status: unknown }).status === 'number') {
+    if (
+      cause &&
+      typeof cause === 'object' &&
+      'status' in cause &&
+      typeof (cause as { status: unknown }).status === 'number'
+    ) {
       this.status = (cause as { status: number }).status;
     }
   }
@@ -119,7 +124,9 @@ export class OmniConnectionError extends Error {
 /** Thrown when no credential (service account or Auth0/ECDSA session) is currently usable -- distinct from a network/connection failure, see isNetworkLevelFailure. */
 export class OmniNotConfiguredError extends Error {
   constructor() {
-    super('Omni endpoint or credentials are not configured (paste a service account key, or log in via Auth0).');
+    super(
+      'Omni endpoint or credentials are not configured (paste a service account key, or log in via Auth0).'
+    );
     this.name = 'OmniNotConfiguredError';
   }
 }

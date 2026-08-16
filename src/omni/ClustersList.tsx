@@ -34,7 +34,11 @@ export function ClustersList() {
       resourceType="Clusters.omni.sidero.dev"
       limit={100}
       loadExtra={async config => {
-        const { items } = await listResources<ClusterStatusSpec>(config, 'ClusterStatuses.omni.sidero.dev', { limit: 100 });
+        const { items } = await listResources<ClusterStatusSpec>(
+          config,
+          'ClusterStatuses.omni.sidero.dev',
+          { limit: 100 }
+        );
         return new Map(items.map(s => [s.metadata.id, s.spec]));
       }}
       headerActions={
@@ -70,7 +74,11 @@ export function ClustersList() {
             <TableCell>
               <Chip
                 size="small"
-                label={status?.phase !== undefined ? PHASE_LABELS[status.phase] ?? 'Unknown' : item.metadata.phase}
+                label={
+                  status?.phase !== undefined
+                    ? PHASE_LABELS[status.phase] ?? 'Unknown'
+                    : item.metadata.phase
+                }
                 color={status?.ready ? 'success' : 'default'}
               />
             </TableCell>

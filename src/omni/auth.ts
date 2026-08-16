@@ -91,7 +91,9 @@ export async function parseServiceAccountKey(rawValue: string): Promise<OmniServ
   try {
     decodedJSON = atob(trimmed);
   } catch {
-    throw new Error('Service account key is not valid base64 — paste the value exactly as printed by `omnictl serviceaccount create`.');
+    throw new Error(
+      'Service account key is not valid base64 — paste the value exactly as printed by `omnictl serviceaccount create`.'
+    );
   }
 
   let parsed: ServiceAccountKeyJSON;
@@ -183,7 +185,9 @@ export async function signGRPCRequest(
   const result: Record<string, string> = {
     [grpcMetadataHeader(TIMESTAMP_HEADER)]: timestamp,
     [grpcMetadataHeader(PAYLOAD_HEADER)]: payloadJSON,
-    [grpcMetadataHeader(SIGNATURE_HEADER)]: `${SIGNATURE_VERSION} ${account.identity} ${account.fingerprint} ${signatureBase64}`,
+    [grpcMetadataHeader(
+      SIGNATURE_HEADER
+    )]: `${SIGNATURE_VERSION} ${account.identity} ${account.fingerprint} ${signatureBase64}`,
   };
   for (const [key, values] of Object.entries(extraHeaders)) {
     if (values && values.length > 0) {

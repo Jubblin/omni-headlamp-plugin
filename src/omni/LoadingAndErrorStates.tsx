@@ -9,7 +9,13 @@
  */
 import { Alert, Box, Button, Skeleton } from '@mui/material';
 
-export function ConnectionErrorAlert({ message, onRetry }: { message: string; onRetry: () => void }) {
+export function ConnectionErrorAlert({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <Alert
       severity="error"

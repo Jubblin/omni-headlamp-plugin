@@ -38,9 +38,17 @@ describe('decodeJwtPayload', () => {
   }
 
   it('decodes a well-formed JWT payload', () => {
-    const jwt = fakeJwt({ email: 'alice@example.com', name: 'Alice', picture: 'https://example.com/a.png' });
+    const jwt = fakeJwt({
+      email: 'alice@example.com',
+      name: 'Alice',
+      picture: 'https://example.com/a.png',
+    });
     const claims = decodeJwtPayload(jwt);
-    expect(claims).toMatchObject({ email: 'alice@example.com', name: 'Alice', picture: 'https://example.com/a.png' });
+    expect(claims).toMatchObject({
+      email: 'alice@example.com',
+      name: 'Alice',
+      picture: 'https://example.com/a.png',
+    });
   });
 
   it('handles base64url payloads needing padding restoration', () => {
@@ -71,7 +79,9 @@ describe('ECDSA keypair + signing', () => {
     expect(pem.startsWith('-----BEGIN PUBLIC KEY-----\n')).toBe(true);
     expect(pem.endsWith('\n-----END PUBLIC KEY-----')).toBe(true);
 
-    const body = pem.replace('-----BEGIN PUBLIC KEY-----\n', '').replace('\n-----END PUBLIC KEY-----', '');
+    const body = pem
+      .replace('-----BEGIN PUBLIC KEY-----\n', '')
+      .replace('\n-----END PUBLIC KEY-----', '');
     for (const line of body.split('\n')) {
       expect(line.length).toBeLessThanOrEqual(64);
     }
@@ -126,7 +136,11 @@ describe('signGRPCRequestECDSA / signResourceServiceRequestECDSA', () => {
     const headers = await signGRPCRequestECDSA(session, '/omni.resources.ResourceService/List');
 
     expect(Object.keys(headers).sort()).toEqual(
-      ['Grpc-Metadata-x-sidero-payload', 'Grpc-Metadata-x-sidero-signature', 'Grpc-Metadata-x-sidero-timestamp'].sort()
+      [
+        'Grpc-Metadata-x-sidero-payload',
+        'Grpc-Metadata-x-sidero-signature',
+        'Grpc-Metadata-x-sidero-timestamp',
+      ].sort()
     );
     expect(headers['Grpc-Metadata-x-sidero-timestamp']).toMatch(/^\d+$/);
   });
@@ -151,7 +165,9 @@ describe('signGRPCRequestECDSA / signResourceServiceRequestECDSA', () => {
     const payload = JSON.parse(headers['Grpc-Metadata-x-sidero-payload']);
     expect(payload.method).toBe(grpcMethod);
     expect(payload.headers.runtime).toEqual(['Omni']);
-    expect(payload.headers['x-sidero-timestamp']).toEqual([headers['Grpc-Metadata-x-sidero-timestamp']]);
+    expect(payload.headers['x-sidero-timestamp']).toEqual([
+      headers['Grpc-Metadata-x-sidero-timestamp'],
+    ]);
     // Headers with no value are still present, null-filled -- matching
     // auth.ts's PGP scheme (see that module's doc for why the server's
     // reflect.DeepEqual-based verification requires every key present).
@@ -177,7 +193,10 @@ describe('signGRPCRequestECDSA / signResourceServiceRequestECDSA', () => {
 
   it('signResourceServiceRequestECDSA always sets runtime=Omni', async () => {
     const session = await fakeSession();
-    const headers = await signResourceServiceRequestECDSA(session, '/omni.resources.ResourceService/List');
+    const headers = await signResourceServiceRequestECDSA(
+      session,
+      '/omni.resources.ResourceService/List'
+    );
     expect(headers['Grpc-Metadata-runtime']).toBe('Omni');
 
     const payload = JSON.parse(headers['Grpc-Metadata-x-sidero-payload']);
