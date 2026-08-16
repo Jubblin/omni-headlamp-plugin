@@ -28,6 +28,8 @@ jobs:
       # which is real supply-chain exposure for no benefit in this tree.
       - run: npm ci --ignore-scripts
 
+      - run: npm run format -- --check
+
       - run: npm run tsc
 
       - run: npm run lint
