@@ -284,6 +284,15 @@ export function ResourceDetail<TSpec>({
 
   const { resource } = state;
 
+  let applyButtonLabel: string;
+  if (applyState.kind === 'applying') {
+    applyButtonLabel = 'Applying…';
+  } else if (applyState.kind === 'checking') {
+    applyButtonLabel = 'Checking…';
+  } else {
+    applyButtonLabel = 'Apply';
+  }
+
   return (
     <Box>
       <Prompt
@@ -317,11 +326,7 @@ export function ResourceDetail<TSpec>({
           }
           onClick={handleApply}
         >
-          {applyState.kind === 'applying'
-            ? 'Applying…'
-            : applyState.kind === 'checking'
-            ? 'Checking…'
-            : 'Apply'}
+          {applyButtonLabel}
         </Button>
         <Button
           variant="outlined"
