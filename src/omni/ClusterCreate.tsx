@@ -52,7 +52,11 @@ interface MachineClassSpec {
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'connection-error'; message: string }
-  | { kind: 'ready'; talosVersions: OmniResource<TalosVersionSpec>[]; machineClasses: OmniResource<MachineClassSpec>[] };
+  | {
+      kind: 'ready';
+      talosVersions: OmniResource<TalosVersionSpec>[];
+      machineClasses: OmniResource<MachineClassSpec>[];
+    };
 
 type SubmitState =
   | { kind: 'idle' }
@@ -92,15 +96,28 @@ export function ClusterCreate() {
     setState({ kind: 'loading' });
     const config = configStore.get();
     if (!config?.endpoint) {
-      setState({ kind: 'connection-error', message: 'Omni endpoint is not configured (see plugin settings).' });
+      setState({
+        kind: 'connection-error',
+        message: 'Omni endpoint is not configured (see plugin settings).',
+      });
       return;
     }
     try {
       const [{ items: talosVersions }, { items: machineClasses }] = await Promise.all([
-        listResources<TalosVersionSpec>({ endpoint: config.endpoint }, 'TalosVersions.omni.sidero.dev', { limit: 200 }),
-        listResources<MachineClassSpec>({ endpoint: config.endpoint }, 'MachineClasses.omni.sidero.dev', { limit: 200 }),
+        listResources<TalosVersionSpec>(
+          { endpoint: config.endpoint },
+          'TalosVersions.omni.sidero.dev',
+          { limit: 200 }
+        ),
+        listResources<MachineClassSpec>(
+          { endpoint: config.endpoint },
+          'MachineClasses.omni.sidero.dev',
+          { limit: 200 }
+        ),
       ]);
-      talosVersions.sort((a, b) => b.metadata.id.localeCompare(a.metadata.id, undefined, { numeric: true }));
+      talosVersions.sort((a, b) =>
+        b.metadata.id.localeCompare(a.metadata.id, undefined, { numeric: true })
+      );
       setState({ kind: 'ready', talosVersions, machineClasses });
     } catch (err) {
       const message = err instanceof OmniConnectionError ? err.message : String(err);
@@ -112,7 +129,10 @@ export function ClusterCreate() {
     load();
   }, []);
 
-  const selectedTalos = state.kind === 'ready' ? state.talosVersions.find(v => v.metadata.id === talosVersion) : undefined;
+  const selectedTalos =
+    state.kind === 'ready'
+      ? state.talosVersions.find(v => v.metadata.id === talosVersion)
+      : undefined;
   const compatibleKubernetesVersions = selectedTalos?.spec.compatible_kubernetes_versions ?? [];
 
   const controlPlaneMachineIds = parseMachineIds(controlPlaneMachinesText);
@@ -123,7 +143,11 @@ export function ClusterCreate() {
   if (workerMode === 'explicit') {
     worker = { kind: 'explicit', machineIds: workerMachineIds };
   } else if (workerMode === 'machineClass') {
-    worker = { kind: 'machineClass', name: workerMachineClass, count: workerUnlimited ? 'unlimited' : workerCount };
+    worker = {
+      kind: 'machineClass',
+      name: workerMachineClass,
+      count: workerUnlimited ? 'unlimited' : workerCount,
+    };
   }
 
   const input: ClusterCreateInput = {
@@ -145,10 +169,19 @@ export function ClusterCreate() {
     let clusterResourceCreated = false;
 
     try {
-      await createCluster({ endpoint: config.endpoint }, input, (resource: PlannedResource, index, total) => {
-        if (resource.type === 'Clusters.omni.sidero.dev') clusterResourceCreated = true;
-        setSubmitState({ kind: 'submitting', step: `Creating ${resource.type.split('.')[0]} "${resource.id}" (${index + 1}/${total})…` });
-      });
+      await createCluster(
+        { endpoint: config.endpoint },
+        input,
+        (resource: PlannedResource, index, total) => {
+          if (resource.type === 'Clusters.omni.sidero.dev') clusterResourceCreated = true;
+          setSubmitState({
+            kind: 'submitting',
+            step: `Creating ${resource.type.split('.')[0]} "${resource.id}" (${
+              index + 1
+            }/${total})…`,
+          });
+        }
+      );
       history.push(`/omni/clusters/${encodeURIComponent(name)}`);
     } catch (err) {
       const message = err instanceof OmniConnectionError ? err.message : String(err);
@@ -205,10 +238,18 @@ export function ClusterCreate() {
               </MenuItem>
             ))}
           </Select>
-          {errors.talosVersion && <Typography variant="caption" color="error">{errors.talosVersion}</Typography>}
+          {errors.talosVersion && (
+            <Typography variant="caption" color="error">
+              {errors.talosVersion}
+            </Typography>
+          )}
         </FormControl>
 
-        <FormControl fullWidth error={!!errors.kubernetesVersion} disabled={submitting || !talosVersion}>
+        <FormControl
+          fullWidth
+          error={!!errors.kubernetesVersion}
+          disabled={submitting || !talosVersion}
+        >
           <InputLabel id="k8s-version-label">Kubernetes version</InputLabel>
           <Select
             labelId="k8s-version-label"
@@ -222,7 +263,11 @@ export function ClusterCreate() {
               </MenuItem>
             ))}
           </Select>
-          {errors.kubernetesVersion && <Typography variant="caption" color="error">{errors.kubernetesVersion}</Typography>}
+          {errors.kubernetesVersion && (
+            <Typography variant="caption" color="error">
+              {errors.kubernetesVersion}
+            </Typography>
+          )}
           {!errors.kubernetesVersion && talosVersion && (
             <Typography variant="caption" color="text.secondary">
               Only versions compatible with Talos {talosVersion} are listed.
@@ -237,7 +282,10 @@ export function ClusterCreate() {
           multiline
           minRows={2}
           error={!!errors.controlPlane}
-          helperText={errors.controlPlane || `${controlPlaneMachineIds.length} machine(s) — must be an odd count (etcd requirement).`}
+          helperText={
+            errors.controlPlane ||
+            `${controlPlaneMachineIds.length} machine(s) — must be an odd count (etcd requirement).`
+          }
           disabled={submitting}
           fullWidth
         />
@@ -246,10 +294,22 @@ export function ClusterCreate() {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Workers (optional)
           </Typography>
-          <RadioGroup row value={workerMode} onChange={e => setWorkerMode(e.target.value as WorkerMode)}>
+          <RadioGroup
+            row
+            value={workerMode}
+            onChange={e => setWorkerMode(e.target.value as WorkerMode)}
+          >
             <FormControlLabel value="none" control={<Radio disabled={submitting} />} label="None" />
-            <FormControlLabel value="explicit" control={<Radio disabled={submitting} />} label="Explicit machines" />
-            <FormControlLabel value="machineClass" control={<Radio disabled={submitting} />} label="Machine class allocation" />
+            <FormControlLabel
+              value="explicit"
+              control={<Radio disabled={submitting} />}
+              label="Explicit machines"
+            />
+            <FormControlLabel
+              value="machineClass"
+              control={<Radio disabled={submitting} />}
+              label="Machine class allocation"
+            />
           </RadioGroup>
 
           {workerMode === 'explicit' && (
@@ -288,7 +348,11 @@ export function ClusterCreate() {
                     No machine classes exist yet — create one under Machine Classes first.
                   </Typography>
                 )}
-                {errors.worker && <Typography variant="caption" color="error">{errors.worker}</Typography>}
+                {errors.worker && (
+                  <Typography variant="caption" color="error">
+                    {errors.worker}
+                  </Typography>
+                )}
               </FormControl>
               <Stack direction="row" spacing={2} alignItems="center">
                 <TextField
@@ -300,7 +364,13 @@ export function ClusterCreate() {
                   sx={{ width: 120 }}
                 />
                 <FormControlLabel
-                  control={<Checkbox checked={workerUnlimited} onChange={e => setWorkerUnlimited(e.target.checked)} disabled={submitting} />}
+                  control={
+                    <Checkbox
+                      checked={workerUnlimited}
+                      onChange={e => setWorkerUnlimited(e.target.checked)}
+                      disabled={submitting}
+                    />
+                  }
                   label="Unlimited (allocate all matching machines)"
                 />
               </Stack>
@@ -323,7 +393,8 @@ export function ClusterCreate() {
             {submitState.clusterResourceCreated && (
               <>
                 {' '}
-                The cluster resource was created before this failed — some child resources may be missing.{' '}
+                The cluster resource was created before this failed — some child resources may be
+                missing.{' '}
                 <Link component={RouterLink} to={`/omni/clusters/${encodeURIComponent(name)}`}>
                   View it
                 </Link>{' '}
@@ -337,7 +408,11 @@ export function ClusterCreate() {
           <Button variant="contained" disabled={hasErrors || submitting} onClick={handleSubmit}>
             {submitting ? 'Creating…' : 'Create Cluster'}
           </Button>
-          <Button variant="outlined" disabled={submitting} onClick={() => history.push('/omni/clusters')}>
+          <Button
+            variant="outlined"
+            disabled={submitting}
+            onClick={() => history.push('/omni/clusters')}
+          >
             Cancel
           </Button>
         </Stack>

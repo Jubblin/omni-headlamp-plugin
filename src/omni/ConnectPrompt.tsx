@@ -24,7 +24,13 @@ import { useEffect, useState } from 'react';
 import { parseServiceAccountKey, storeServiceAccountKey } from './auth';
 import { getAuthConfig, OmniAuthConfigSpec } from './client';
 import { OmniPluginConfig } from './settings';
-import { completeAuth0Login, confirmAndStoreUserSession, createUserKeyPair, isAuth0Callback, startAuth0Login } from './userAuth';
+import {
+  completeAuth0Login,
+  confirmAndStoreUserSession,
+  createUserKeyPair,
+  isAuth0Callback,
+  startAuth0Login,
+} from './userAuth';
 
 const configStore = new ConfigStore<OmniPluginConfig>('omni-manager');
 
@@ -139,7 +145,10 @@ export function ConnectPrompt({ onConnected }: { onConnected: () => void }) {
         throw new Error('This Omni instance is not configured for Auth0 login.');
       }
       // Redirects the browser away -- nothing after this line runs on success.
-      await startAuth0Login({ domain: authConfig.auth0.domain, clientId: authConfig.auth0.client_id });
+      await startAuth0Login({
+        domain: authConfig.auth0.domain,
+        clientId: authConfig.auth0.client_id,
+      });
     } catch (err) {
       setAuth0Error(err instanceof Error ? err.message : String(err));
       setAuth0Starting(false);
@@ -156,7 +165,8 @@ export function ConnectPrompt({ onConnected }: { onConnected: () => void }) {
     );
   }
 
-  const redirectUri = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+  const redirectUri =
+    typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
 
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', mt: 6 }}>
@@ -195,8 +205,8 @@ export function ConnectPrompt({ onConnected }: { onConnected: () => void }) {
 
       <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
         Paste the value printed by <code>omnictl serviceaccount create &lt;name&gt;</code> (the{' '}
-        <code>OMNI_SERVICE_ACCOUNT_KEY</code> line). Held in this browser tab's session storage
-        only — cleared when the tab closes, never sent anywhere except signed Omni requests.
+        <code>OMNI_SERVICE_ACCOUNT_KEY</code> line). Held in this browser tab's session storage only
+        — cleared when the tab closes, never sent anywhere except signed Omni requests.
       </Typography>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

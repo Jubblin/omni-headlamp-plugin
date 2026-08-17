@@ -63,7 +63,12 @@ export async function registerPublicKey(
   config: OmniEndpointConfig,
   request: RegisterPublicKeyRequest
 ): Promise<RegisterPublicKeyResponse> {
-  return postToOmniGRPCGateway<RegisterPublicKeyResponse>(config, `/${AUTH_SERVICE}/RegisterPublicKey`, request, {});
+  return postToOmniGRPCGateway<RegisterPublicKeyResponse>(
+    config,
+    `/${AUTH_SERVICE}/RegisterPublicKey`,
+    request,
+    {}
+  );
 }
 
 /**
@@ -71,7 +76,11 @@ export async function registerPublicKey(
  * token (Auth0/OIDC) -- see module doc. Throws (via OmniConnectionError) on
  * failure, e.g. an expired or already-used Auth0 token.
  */
-export async function confirmPublicKey(config: OmniEndpointConfig, publicKeyId: string, bearerIdToken: string): Promise<void> {
+export async function confirmPublicKey(
+  config: OmniEndpointConfig,
+  publicKeyId: string,
+  bearerIdToken: string
+): Promise<void> {
   await postToOmniGRPCGateway<unknown>(
     config,
     `/${AUTH_SERVICE}/ConfirmPublicKey`,
@@ -79,4 +88,3 @@ export async function confirmPublicKey(config: OmniEndpointConfig, publicKeyId: 
     { 'Grpc-Metadata-authorization': `Bearer ${bearerIdToken}` }
   );
 }
-

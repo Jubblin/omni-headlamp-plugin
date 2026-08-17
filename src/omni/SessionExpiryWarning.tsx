@@ -37,7 +37,10 @@ const POLL_INTERVAL_MS = 60 * 1000;
 
 const configStore = new ConfigStore<OmniPluginConfig>('omni-manager');
 
-type WarningState = { kind: 'hidden' } | { kind: 'warning'; minutesLeft: number } | { kind: 'expired' };
+type WarningState =
+  | { kind: 'hidden' }
+  | { kind: 'warning'; minutesLeft: number }
+  | { kind: 'expired' };
 
 export function SessionExpiryWarning() {
   const [state, setState] = useState<WarningState>({ kind: 'hidden' });
@@ -106,7 +109,10 @@ export function SessionExpiryWarning() {
         throw new Error('This Omni instance is no longer configured for Auth0 login.');
       }
       // Redirects the browser away -- nothing after this line runs on success.
-      await startAuth0Login({ domain: authConfig.auth0.domain, clientId: authConfig.auth0.client_id });
+      await startAuth0Login({
+        domain: authConfig.auth0.domain,
+        clientId: authConfig.auth0.client_id,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setReconnecting(false);
@@ -119,14 +125,19 @@ export function SessionExpiryWarning() {
 
   let message: string;
   if (state.kind === 'expired') {
-    message = 'Your Omni sign-in has expired. Finish or save any in-progress edits, then reconnect.';
+    message =
+      'Your Omni sign-in has expired. Finish or save any in-progress edits, then reconnect.';
   } else {
     const plural = state.minutesLeft === 1 ? '' : 's';
     message = `Your Omni sign-in expires in about ${state.minutesLeft} minute${plural}. Reconnect whenever it's convenient — this won't interrupt you automatically.`;
   }
 
   return (
-    <Snackbar open anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} onClose={() => setDismissed(true)}>
+    <Snackbar
+      open
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      onClose={() => setDismissed(true)}
+    >
       <Alert
         severity={state.kind === 'expired' ? 'error' : 'warning'}
         onClose={() => setDismissed(true)}

@@ -19,7 +19,13 @@
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
 import { Box, Skeleton, Table, TableBody, TableHead, TableRow } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { hasActiveCredential, listResources, OmniConnectionError, OmniResource, OmniResourceType } from './client';
+import {
+  hasActiveCredential,
+  listResources,
+  OmniConnectionError,
+  OmniResource,
+  OmniResourceType,
+} from './client';
 import { ConnectPrompt } from './ConnectPrompt';
 import { ConnectionErrorAlert } from './LoadingAndErrorStates';
 import { OmniPluginConfig } from './settings';
@@ -72,7 +78,10 @@ export function ResourceList<TSpec, TExtra = undefined>({
 
     const config = configStore.get();
     if (!config?.endpoint) {
-      setState({ kind: 'connection-error', message: 'Omni endpoint is not configured (see plugin settings).' });
+      setState({
+        kind: 'connection-error',
+        message: 'Omni endpoint is not configured (see plugin settings).',
+      });
       return;
     }
 

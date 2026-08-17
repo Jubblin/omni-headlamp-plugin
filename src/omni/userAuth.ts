@@ -35,7 +35,12 @@
  * (frontend/src/methods/key.ts's useIDBKeyval('keyPair', ...)).
  */
 import { confirmPublicKey as confirmPublicKeyRPC, registerPublicKey } from './authService';
-import { grpcMetadataHeader, INCLUDED_HEADERS, OmniEndpointConfig, uint8ArrayToBase64 } from './omniProxy';
+import {
+  grpcMetadataHeader,
+  INCLUDED_HEADERS,
+  OmniEndpointConfig,
+  uint8ArrayToBase64,
+} from './omniProxy';
 
 // ---------------------------------------------------------------------------
 // Wire-envelope constants (siderov1 scheme) -- INCLUDED_HEADERS/
@@ -68,7 +73,10 @@ function base64UrlEncode(bytes: Uint8Array): string {
  * even this plugin's own code can't extract it once created.
  */
 export async function generateUserKeyPair(): Promise<CryptoKeyPair> {
-  return crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
+  return crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
+    'sign',
+    'verify',
+  ]);
 }
 
 /**
@@ -85,8 +93,15 @@ export async function exportPublicKeyPem(publicKey: CryptoKey): Promise<string> 
 }
 
 /** Signs `data` with the session's private key -- the ECDSA equivalent of auth.ts's openpgp.sign. */
-export async function signDetachedECDSA(data: string, keyPair: CryptoKeyPair): Promise<Uint8Array<ArrayBuffer>> {
-  const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, keyPair.privateKey, new TextEncoder().encode(data));
+export async function signDetachedECDSA(
+  data: string,
+  keyPair: CryptoKeyPair
+): Promise<Uint8Array<ArrayBuffer>> {
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    keyPair.privateKey,
+    new TextEncoder().encode(data)
+  );
   return new Uint8Array(signature);
 }
 
@@ -119,7 +134,8 @@ function openSessionDB(): Promise<IDBDatabase> {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('Failed to open the browser session database.'));
+    request.onerror = () =>
+      reject(request.error ?? new Error('Failed to open the browser session database.'));
   });
 }
 
@@ -223,7 +239,9 @@ export async function signGRPCRequestECDSA(
   const result: Record<string, string> = {
     [grpcMetadataHeader(TIMESTAMP_HEADER)]: timestamp,
     [grpcMetadataHeader(PAYLOAD_HEADER)]: payloadJSON,
-    [grpcMetadataHeader(SIGNATURE_HEADER)]: `${SIGNATURE_VERSION} ${session.identity} ${session.publicKeyId} ${signatureBase64}`,
+    [grpcMetadataHeader(
+      SIGNATURE_HEADER
+    )]: `${SIGNATURE_VERSION} ${session.identity} ${session.publicKeyId} ${signatureBase64}`,
   };
   for (const [key, value] of Object.entries(extraHeaders)) {
     if (value) {
@@ -234,7 +252,10 @@ export async function signGRPCRequestECDSA(
 }
 
 /** Standard ResourceService call: always targets the "Omni" runtime -- the ECDSA equivalent of auth.ts's signResourceServiceRequest. */
-export async function signResourceServiceRequestECDSA(session: OmniUserSession, grpcMethod: string): Promise<Record<string, string>> {
+export async function signResourceServiceRequestECDSA(
+  session: OmniUserSession,
+  grpcMethod: string
+): Promise<Record<string, string>> {
   return signGRPCRequestECDSA(session, grpcMethod, { runtime: 'Omni' });
 }
 
@@ -386,7 +407,11 @@ export async function completeAuth0Login(config: Auth0Config): Promise<Auth0Iden
 
   if (!tokenResponse.ok) {
     const bodyText = await tokenResponse.text().catch(() => '');
-    throw new Error(`Auth0 token exchange failed (${tokenResponse.status}): ${bodyText || tokenResponse.statusText}`);
+    throw new Error(
+      `Auth0 token exchange failed (${tokenResponse.status}): ${
+        bodyText || tokenResponse.statusText
+      }`
+    );
   }
 
   const tokenBody = (await tokenResponse.json()) as { id_token?: string };
@@ -428,7 +453,10 @@ export interface PendingUserKey {
  * callers must still call confirmAndStoreUserSession with the Auth0 ID token
  * (see that function's doc comment) before it's a valid session.
  */
-export async function createUserKeyPair(config: OmniEndpointConfig, identity: string): Promise<PendingUserKey> {
+export async function createUserKeyPair(
+  config: OmniEndpointConfig,
+  identity: string
+): Promise<PendingUserKey> {
   const email = identity.toLowerCase();
   const keyPair = await generateUserKeyPair();
   const keyPem = await exportPublicKeyPem(keyPair.publicKey);

@@ -12,7 +12,23 @@
  * doesn't.
  */
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Skeleton, Stack, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Breadcrumbs,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Link,
+  Skeleton,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 import { formatUpdated, getResource, OmniConnectionError, OmniResource } from './client';
@@ -52,17 +68,28 @@ export function ClusterDetail() {
     setState({ kind: 'loading' });
     const config = configStore.get();
     if (!config?.endpoint) {
-      setState({ kind: 'connection-error', message: 'Omni endpoint is not configured (see plugin settings).' });
+      setState({
+        kind: 'connection-error',
+        message: 'Omni endpoint is not configured (see plugin settings).',
+      });
       return;
     }
     try {
-      const cluster = await getResource<ClusterSpec>({ endpoint: config.endpoint }, 'Clusters.omni.sidero.dev', id);
+      const cluster = await getResource<ClusterSpec>(
+        { endpoint: config.endpoint },
+        'Clusters.omni.sidero.dev',
+        id
+      );
       // Best-effort: the ClusterStatus controller may not have produced a
       // status yet for a just-created cluster. A failed fetch here shouldn't
       // block showing the cluster itself.
       let status: ClusterStatusSpec | null = null;
       try {
-        const statusResource = await getResource<ClusterStatusSpec>({ endpoint: config.endpoint }, 'ClusterStatuses.omni.sidero.dev', id);
+        const statusResource = await getResource<ClusterStatusSpec>(
+          { endpoint: config.endpoint },
+          'ClusterStatuses.omni.sidero.dev',
+          id
+        );
         status = statusResource.spec;
       } catch {
         status = null;
@@ -86,7 +113,10 @@ export function ClusterDetail() {
     setDestroyState({ kind: 'destroying', step: 'Tearing down…' });
     try {
       await destroyCluster({ endpoint: config.endpoint }, id, attempt => {
-        setDestroyState({ kind: 'destroying', step: `Waiting for finalizers to clear (attempt ${attempt})…` });
+        setDestroyState({
+          kind: 'destroying',
+          step: `Waiting for finalizers to clear (attempt ${attempt})…`,
+        });
       });
       history.push('/omni/clusters');
     } catch (err) {
@@ -107,7 +137,14 @@ export function ClusterDetail() {
 
   if (state.kind === 'connection-error') {
     return (
-      <Alert severity="error" action={<Button color="inherit" size="small" onClick={load}>Retry</Button>}>
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={load}>
+            Retry
+          </Button>
+        }
+      >
         Can't reach Omni — {state.message}
       </Alert>
     );
@@ -129,7 +166,11 @@ export function ClusterDetail() {
         <Typography variant="h6">{cluster.metadata.id}</Typography>
         <Chip
           size="small"
-          label={status?.phase !== undefined ? PHASE_LABELS[status.phase] ?? 'Unknown' : cluster.metadata.phase}
+          label={
+            status?.phase !== undefined
+              ? PHASE_LABELS[status.phase] ?? 'Unknown'
+              : cluster.metadata.phase
+          }
           color={status?.ready ? 'success' : 'default'}
         />
         <Typography variant="body2" color="text.secondary">
@@ -139,20 +180,31 @@ export function ClusterDetail() {
 
       <Stack spacing={0.5} sx={{ mb: 3 }}>
         <Typography variant="body2">Talos version: {cluster.spec.talos_version || '—'}</Typography>
-        <Typography variant="body2">Kubernetes version: {cluster.spec.kubernetes_version || '—'}</Typography>
         <Typography variant="body2">
-          Machines: {status?.machines?.connected ?? 0} connected / {status?.machines?.requested ?? 0} requested
+          Kubernetes version: {cluster.spec.kubernetes_version || '—'}
         </Typography>
-        <Typography variant="body2">Control plane ready: {status?.controlplaneReady ? 'yes' : 'no'}</Typography>
+        <Typography variant="body2">
+          Machines: {status?.machines?.connected ?? 0} connected /{' '}
+          {status?.machines?.requested ?? 0} requested
+        </Typography>
+        <Typography variant="body2">
+          Control plane ready: {status?.controlplaneReady ? 'yes' : 'no'}
+        </Typography>
         <Typography variant="body2">Cluster ready: {status?.ready ? 'yes' : 'no'}</Typography>
         {!status && (
           <Typography variant="caption" color="text.secondary">
-            No status reported yet — this is normal for a just-created cluster with no machines connected.
+            No status reported yet — this is normal for a just-created cluster with no machines
+            connected.
           </Typography>
         )}
       </Stack>
 
-      <Button variant="outlined" color="error" onClick={() => setDestroyState({ kind: 'confirming' })} disabled={destroying}>
+      <Button
+        variant="outlined"
+        color="error"
+        onClick={() => setDestroyState({ kind: 'confirming' })}
+        disabled={destroying}
+      >
         Destroy Cluster
       </Button>
 
@@ -167,12 +219,15 @@ export function ClusterDetail() {
         </Alert>
       )}
 
-      <Dialog open={destroyState.kind === 'confirming' || destroying} onClose={() => (destroying ? undefined : setDestroyState({ kind: 'idle' }))}>
+      <Dialog
+        open={destroyState.kind === 'confirming' || destroying}
+        onClose={() => (destroying ? undefined : setDestroyState({ kind: 'idle' }))}
+      >
         <DialogTitle>Destroy {cluster.metadata.id}?</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            This can't be undone -- every machine set, machine set node, and config patch belonging to this cluster will be destroyed
-            too. Type the cluster's name to confirm.
+            This can't be undone -- every machine set, machine set node, and config patch belonging
+            to this cluster will be destroyed too. Type the cluster's name to confirm.
           </DialogContentText>
           <TextField
             fullWidth

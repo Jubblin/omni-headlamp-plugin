@@ -44,7 +44,9 @@ export function ConfigPatchesList() {
         <TableRow
           key={item.metadata.id}
           hover
-          onClick={() => history.push(`/omni/config-patches/${encodeURIComponent(item.metadata.id)}`)}
+          onClick={() =>
+            history.push(`/omni/config-patches/${encodeURIComponent(item.metadata.id)}`)
+          }
           sx={{ cursor: 'pointer' }}
         >
           <TableCell>{item.metadata.phase}</TableCell>

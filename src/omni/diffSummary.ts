@@ -60,7 +60,11 @@ function describeLine(lineText: string, added: boolean): string | null {
  * @param originalLines - The original text, split into lines.
  * @param modifiedLines - The modified text, split into lines.
  */
-export function summarizeDiff(hunks: DiffHunk[], originalLines: string[], modifiedLines: string[]): string {
+export function summarizeDiff(
+  hunks: DiffHunk[],
+  originalLines: string[],
+  modifiedLines: string[]
+): string {
   if (hunks.length === 0) {
     return 'No changes.';
   }
