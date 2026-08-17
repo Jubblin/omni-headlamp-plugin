@@ -9,7 +9,7 @@
 # Pinned by digest only (not tag+digest) -- the digest already fully pins
 # the image; this comment carries the human-readable tag it corresponds to.
 # Tag: node:24-bookworm-slim
-FROM node@sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03
+FROM node@sha256:bde0dae02f2b12d2bce5ee72b2432f0e511767b7b2dc4dd3b064df11ae422fee
 
 WORKDIR /workspace
 
