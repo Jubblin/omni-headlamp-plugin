@@ -55,6 +55,12 @@ registerSidebarEntry({
   icon: 'mdi:server-network',
   url: '/omni/clusters',
   useClusterURL: false,
+  // Without this, entries default to the IN_CLUSTER sidebar and never show
+  // on the pre-cluster Home screen -- confirmed by reading
+  // useSidebarItems.js's `item.sidebar ?? DefaultSidebars.IN_CLUSTER` default.
+  // Child entries below attach via `parent: 'omni'` lookup, so they inherit
+  // this without needing the field themselves.
+  sidebar: 'HOME',
 });
 
 registerSidebarEntry({
@@ -83,7 +89,7 @@ registerSidebarEntry({
 
 registerRoute({
   path: '/omni/clusters',
-  sidebar: 'omni-clusters',
+  sidebar: { item: 'omni-clusters', sidebar: 'HOME' },
   name: 'Omni Clusters',
   useClusterURL: false,
   // See the identical note on the ConfigPatches list route below -- same
@@ -105,7 +111,7 @@ registerRoute({
 // form.
 registerRoute({
   path: '/omni/clusters/new',
-  sidebar: 'omni-clusters',
+  sidebar: { item: 'omni-clusters', sidebar: 'HOME' },
   name: 'Omni Cluster Create',
   useClusterURL: false,
   exact: true,
@@ -119,7 +125,7 @@ registerRoute({
 
 registerRoute({
   path: '/omni/clusters/:id',
-  sidebar: 'omni-clusters',
+  sidebar: { item: 'omni-clusters', sidebar: 'HOME' },
   name: 'Omni Cluster Detail',
   useClusterURL: false,
   noAuthRequired: true,
@@ -134,7 +140,7 @@ registerRoute({
 // delivery-shape decision.
 registerRoute({
   path: '/omni/config-patches',
-  sidebar: 'omni-config-patches',
+  sidebar: { item: 'omni-config-patches', sidebar: 'HOME' },
   name: 'Omni Config Patches',
   useClusterURL: false,
   // Without this, react-router v5's Switch (first-match-wins, prefix
@@ -159,7 +165,7 @@ registerRoute({
 // PR2 scope: edit/diff/apply/delete for a single ConfigPatch.
 registerRoute({
   path: '/omni/config-patches/:id',
-  sidebar: 'omni-config-patches',
+  sidebar: { item: 'omni-config-patches', sidebar: 'HOME' },
   name: 'Omni Config Patch Detail',
   useClusterURL: false,
   noAuthRequired: true,
@@ -173,7 +179,7 @@ registerRoute({
 
 registerRoute({
   path: '/omni/machine-classes',
-  sidebar: 'omni-machine-classes',
+  sidebar: { item: 'omni-machine-classes', sidebar: 'HOME' },
   name: 'Omni Machine Classes',
   useClusterURL: false,
   // See the identical note on the ConfigPatches list route above -- same
@@ -191,7 +197,7 @@ registerRoute({
 // PR2 scope: edit/diff/apply/delete for a single MachineClass.
 registerRoute({
   path: '/omni/machine-classes/:id',
-  sidebar: 'omni-machine-classes',
+  sidebar: { item: 'omni-machine-classes', sidebar: 'HOME' },
   name: 'Omni Machine Class Detail',
   useClusterURL: false,
   noAuthRequired: true,
