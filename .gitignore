@@ -6,3 +6,4 @@ dist/
 .gstack/
 .eslintcache
 screenshots/
+deploy/test/.generated/

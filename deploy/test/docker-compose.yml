@@ -1,0 +1,57 @@
+# Disposable Omni + mock-OIDC + Headlamp-with-this-plugin stack for
+# scripts/visual-smoke-test.mjs's post-authentication run. Run via `make screenshots` (see
+# Makefile), which generates the throwaway credentials this depends on first
+# (scripts/setup-test-omni.sh) -- don't run `docker compose up` here directly without that step,
+# deploy/test/.generated/ won't exist yet.
+services:
+  dex:
+    image: dexidp/dex:v2.41.1
+    command: ['dex', 'serve', '/etc/dex/config.yaml']
+    volumes:
+      - ./dex-config.yaml:/etc/dex/config.yaml:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--spider',
+          '-q',
+          'http://localhost:8080/dex/.well-known/openid-configuration',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  omni:
+    image: ghcr.io/siderolabs/omni:latest
+    cap_add:
+      - NET_ADMIN
+    command: ['--config-path=/etc/omni/config.yaml']
+    volumes:
+      - ./omni-config.yaml:/etc/omni/config.yaml:ro
+      - ./.generated/certs:/certs:ro
+      - omni-out:/out
+    ports:
+      - '${OMNI_HOST_PORT:-8099}:8099'
+    depends_on:
+      dex:
+        condition: service_healthy
+
+  headlamp:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    command:
+      - -in-cluster=false
+      - -kubeconfig=/dev/null
+      - -listen-addr=0.0.0.0
+      - -port=4466
+      - -proxy-urls=https://omni:8099/*
+    ports:
+      - '4466:4466'
+    depends_on:
+      - omni
+
+volumes:
+  omni-out:

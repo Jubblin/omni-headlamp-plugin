@@ -1,0 +1,58 @@
+# Disposable test-Omni instance for scripts/visual-smoke-test.mjs's post-authentication run.
+# No Vault, no MinIO, no real Talos machines -- everything this plugin's UI actually exercises
+# (Clusters/Config Patches/Machine Classes lists, the Cluster create form's real Talos-version
+# data, a real signed API round trip) is just Omni COSI resources, not hardware-dependent.
+#
+# etcd's privateKeySource (/certs/etcd-key.asc) and the API's certFile/keyFile (/certs/omni.*)
+# are generated fresh per run by scripts/setup-test-omni.sh -- not checked in, genuinely
+# throwaway, thrown away with the container at the end of every run.
+account:
+  id: ac000000-0000-0000-0000-000000000000
+  name: omni-smoke-test
+
+services:
+  api:
+    endpoint: 0.0.0.0:8099
+    advertisedURL: https://omni:8099/
+    certFile: /certs/omni.pem
+    keyFile: /certs/omni-key.pem
+  machineAPI:
+    endpoint: 0.0.0.0:8090
+    advertisedURL: grpc://omni:8090
+  siderolink:
+    eventSinkPort: 8091
+    wireGuard:
+      endpoint: 0.0.0.0:50180
+      # No real machines ever join in this suite, so loopback is fine here.
+      advertisedEndpoint: 127.0.0.1:50180
+
+auth:
+  initialUsers:
+    - test-user@test.local
+  oidc:
+    enabled: true
+    providerURL: http://dex:8080/dex
+    clientID: omni
+    clientSecret: ZXhhbXBsZR1hcHAtc2VjcmV0
+    scopes:
+      - openid
+      - profile
+      - email
+    allowUnverifiedEmail: true
+  initialServiceAccount:
+    enabled: true
+    keyPath: /out/key
+
+storage:
+  default:
+    kind: etcd
+    etcd:
+      embedded: true
+      embeddedUnsafeFsync: true
+      privateKeySource: file:///certs/etcd-key.asc
+  sqlite:
+    path: /out/secondary.db
+
+eulaAccept:
+  name: Test User
+  email: test-user@test.local

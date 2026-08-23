@@ -14,9 +14,14 @@
  * runnable check for that class of bug, not a docstring promising it won't
  * happen again.
  *
- * Needs no real Omni instance or kubeconfig -- every page captured here is
- * reachable before the "Connect to Omni" gate, deliberately, so this runs
- * in CI with no secrets.
+ * The first four screenshots need no real Omni instance or kubeconfig --
+ * every page they visit is reachable before the "Connect to Omni" gate. If
+ * OMNI_ENDPOINT and OMNI_SERVICE_ACCOUNT_KEY are set (see Makefile's
+ * `screenshots` target, which points these at a disposable throwaway Omni
+ * instance -- deploy/test/), a second pass connects for real and captures
+ * authenticated screens backed by real Omni API data (a real cluster list,
+ * real Talos versions in the create form). Skipped, not failed, when unset,
+ * so this still runs secret-free by default.
  *
  * Usage: node scripts/visual-smoke-test.mjs [baseUrl]
  *   baseUrl defaults to http://localhost:4466 (see Makefile's
@@ -44,6 +49,51 @@ async function requireVisible(locator, description) {
   } catch {
     throw new Error(`Expected ${description} to be visible, but it wasn't.`);
   }
+}
+
+/**
+ * Connects to a real Omni instance and captures authenticated screens. Only called when
+ * OMNI_ENDPOINT + OMNI_SERVICE_ACCOUNT_KEY are set -- see this file's module doc.
+ *
+ * The plugin's Omni-endpoint setting is written directly to the same localStorage key its own
+ * Settings > Plugins > omni-manager panel persists to (Headlamp's generic plugin ConfigStore),
+ * rather than driven through that panel's Save button -- confirmed live (2026-08-23) that the
+ * Save button doesn't reliably persist a change in the Headlamp version this was built against;
+ * this sidesteps that rather than making the smoke test flaky on an unrelated bug. Worth
+ * revisiting if a future Headlamp bump fixes it.
+ */
+async function runAuthenticatedChecks(page, baseUrl, outDir, omniEndpoint, serviceAccountKey) {
+  await page.evaluate(
+    ({ endpoint }) => {
+      localStorage.setItem('pluginConfigs', JSON.stringify({ 'omni-manager': { endpoint } }));
+      sessionStorage.clear();
+    },
+    { endpoint: omniEndpoint }
+  );
+  await page.goto(baseUrl, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Omni' }).click();
+
+  const keyField = page.getByRole('textbox', { name: 'Service account key' });
+  await requireVisible(keyField, 'the "Connect to Omni" service-account-key field');
+  await keyField.fill(serviceAccountKey);
+  await page.getByRole('button', { name: 'Connect' }).click();
+
+  await requireVisible(
+    page.getByRole('button', { name: 'Create Cluster' }),
+    'the authenticated Clusters page (real signed API call succeeding)'
+  );
+  await page.screenshot({ path: `${outDir}/05-authenticated-clusters.png`, fullPage: true });
+
+  await page.getByRole('button', { name: 'Create Cluster' }).click();
+  const talosVersionField = page.getByLabel('Talos version');
+  await requireVisible(talosVersionField, 'the New Cluster form’s Talos version field');
+  await talosVersionField.click();
+  await requireVisible(
+    page.getByRole('option').first(),
+    'at least one real Talos version option (from Omni’s own upstream feed)'
+  );
+  await page.screenshot({ path: `${outDir}/06-authenticated-cluster-create.png`, fullPage: true });
+  await page.keyboard.press('Escape');
 }
 
 try {
@@ -86,6 +136,16 @@ try {
     'omni-manager in the plugins list'
   );
   await page.screenshot({ path: `${outDir}/04-settings-plugins.png`, fullPage: true });
+
+  const omniEndpoint = process.env.OMNI_ENDPOINT;
+  const serviceAccountKey = process.env.OMNI_SERVICE_ACCOUNT_KEY;
+  if (omniEndpoint && serviceAccountKey) {
+    await runAuthenticatedChecks(page, baseUrl, outDir, omniEndpoint, serviceAccountKey);
+  } else {
+    console.log(
+      'OMNI_ENDPOINT / OMNI_SERVICE_ACCOUNT_KEY not set -- skipping authenticated checks.'
+    );
+  }
 
   console.log(`✓ Visual smoke test passed -- screenshots + video written to ${outDir}/`);
 } catch (err) {

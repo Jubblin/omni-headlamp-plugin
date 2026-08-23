@@ -14,29 +14,48 @@ validate:
 	cp dist/main.js .plugins/main.js
 	cp package.json .plugins/package.json
 
-# Builds deploy/Dockerfile (Headlamp + this plugin baked in), runs it with
-# no real credentials (every page scripts/visual-smoke-test.mjs visits is
-# reachable before the "Connect to Omni" gate), and drives it with a real
-# browser to produce regression screenshots + video in screenshots/.
-# -kubeconfig=/dev/null still surfaces a (harmless, logged) parse error --
-# see the identical note the very first time this repo's session explored
-# that flag -- the Home page renders fine regardless.
+# Builds deploy/Dockerfile (Headlamp + this plugin baked in) and a full
+# disposable Omni instance (deploy/test/), then drives the result with a
+# real browser end to end -- pre-authentication pages AND, once connected
+# with the disposable instance's own bootstrapped service-account key,
+# real authenticated screens backed by real Omni API data (see
+# scripts/visual-smoke-test.mjs). Produces regression screenshots + video
+# in screenshots/.
 #
-# Needs `docker` and `npx playwright install chromium` once locally; CI's
-# visual-smoke-test job (.github/workflows/ci.yml) has both.
+# Needs `docker`, `gpg`, `openssl`, and `npx playwright install chromium`
+# once locally; CI's visual-smoke-test job (.github/workflows/ci.yml) has
+# all four.
 screenshots:
-	docker build -f deploy/Dockerfile -t omni-manager-headlamp:smoke-test .
-	docker rm -f omni-manager-smoke-test >/dev/null 2>&1 || true
-	docker run -d --name omni-manager-smoke-test -p 4466:4466 \
-		omni-manager-headlamp:smoke-test \
-		-in-cluster=false -kubeconfig=/dev/null -listen-addr=0.0.0.0 -port=4466
+	scripts/setup-test-omni.sh
+	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1 || true
+	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml up -d --build
+	@echo "Waiting for the bootstrapped service-account key..."
+	@OMNI_CID="$$(docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml ps -q omni)"; \
+	deadline=$$(( $$(date +%s) + 120 )); \
+	KEY=""; \
+	until KEY="$$(docker run --rm --volumes-from "$$OMNI_CID" alpine sh -c '[ -s /out/key ] && cat /out/key' 2>/dev/null)" && [ -n "$$KEY" ]; do \
+		if [ "$$(date +%s)" -gt "$$deadline" ]; then \
+			echo "Omni did not write the service-account key in time" >&2; \
+			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml logs omni | tail -50 >&2; \
+			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done; \
+	echo "$$KEY" > /tmp/omni-manager-smoke-test-key
+	@echo "Trusting the disposable instance's self-signed cert (see deploy/Dockerfile's Alpine base -- no update-ca-certificates, so this appends directly) and restarting Headlamp to pick it up..."
+	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml exec -T -u root headlamp \
+		sh -c 'cat >> /etc/ssl/certs/ca-certificates.crt' < deploy/test/.generated/certs/omni.pem
+	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml restart headlamp
 	@echo "Waiting for Headlamp to come up..."
 	@for i in $$(seq 1 30); do \
 		curl -sf -o /dev/null http://localhost:4466/ && break; \
 		sleep 1; \
 	done
 	rm -rf screenshots
-	node scripts/visual-smoke-test.mjs http://localhost:4466; \
+	OMNI_ENDPOINT=https://omni:8099 OMNI_SERVICE_ACCOUNT_KEY="$$(cat /tmp/omni-manager-smoke-test-key)" \
+		node scripts/visual-smoke-test.mjs http://localhost:4466; \
 	status=$$?; \
-	docker rm -f omni-manager-smoke-test >/dev/null 2>&1; \
+	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
+	rm -f /tmp/omni-manager-smoke-test-key; \
 	exit $$status
