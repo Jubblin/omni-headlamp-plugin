@@ -1,0 +1,28 @@
+# Runs the image built by ./Dockerfile -- Headlamp with omni-manager already
+# baked in. Two things you must set, per DEPLOYMENT.md's "two separate
+# settings" note (both required, missing either looks identical to Omni
+# being down):
+#
+#   export KUBECONFIG_PATH=$HOME/.kube/config
+#   export OMNI_PROXY_URL="https://your-omni-instance.example.com/*"
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+# The plugin's own "Omni endpoint" setting (Headlamp -> Settings -> Plugins
+# -> omni-manager, set once in the browser) is the other half -- not
+# something this compose file can set for you, since it's stored client-side.
+services:
+  headlamp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - '4466:4466'
+    volumes:
+      # Real credentials -- never baked into the image, mounted read-only.
+      - ${KUBECONFIG_PATH:?Set KUBECONFIG_PATH, e.g. export KUBECONFIG_PATH=$HOME/.kube/config}:/home/headlamp/.kube/config:ro
+    command:
+      - -in-cluster=false
+      - -kubeconfig=/home/headlamp/.kube/config
+      - -listen-addr=0.0.0.0
+      - -port=4466
+      - -proxy-urls=${OMNI_PROXY_URL:?Set OMNI_PROXY_URL, e.g. https://your-omni-instance.example.com/*}
