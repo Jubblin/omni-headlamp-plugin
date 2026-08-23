@@ -87,6 +87,8 @@ describe('ClusterCreate', () => {
     await user.type(await screen.findByLabelText(/cluster name/i), 'my-cluster');
     await selectOption(user, /talos version/i, '1.7.0');
     await selectOption(user, /kubernetes version/i, '1.30.0');
+    // Control plane defaults to "Machine class allocation" -- switch to explicit for this test.
+    await user.click(screen.getAllByRole('radio', { name: /explicit machines/i })[0]);
     await user.type(screen.getByLabelText(/control plane machine uuids/i), 'm1\nm2\nm3');
 
     await user.click(screen.getByRole('button', { name: /create cluster/i }));
@@ -130,6 +132,7 @@ describe('ClusterCreate', () => {
     await user.type(await screen.findByLabelText(/cluster name/i), 'my-cluster');
     await selectOption(user, /talos version/i, '1.7.0');
     await selectOption(user, /kubernetes version/i, '1.30.0');
+    await user.click(screen.getAllByRole('radio', { name: /explicit machines/i })[0]);
     await user.type(screen.getByLabelText(/control plane machine uuids/i), 'm1\nm2');
 
     expect(screen.getByText(/etcd requirement/i)).toBeInTheDocument();
@@ -144,11 +147,12 @@ describe('ClusterCreate', () => {
     await user.type(await screen.findByLabelText(/cluster name/i), 'my-cluster');
     await selectOption(user, /talos version/i, '1.7.0');
     await selectOption(user, /kubernetes version/i, '1.30.0');
+    // Control plane defaults to "Machine class allocation" -- switch to explicit for this test.
+    await user.click(screen.getAllByRole('radio', { name: /explicit machines/i })[0]);
     await user.type(screen.getByLabelText(/control plane machine uuids/i), 'm1\nm2\nm3');
 
     // Two "Machine class allocation" radios exist (control plane + worker) --
-    // the worker section's is the second one in document order; leave the
-    // control plane's own radio (still "Explicit machines") untouched.
+    // the worker section's is the second one in document order.
     const machineClassRadios = screen.getAllByRole('radio', { name: /machine class allocation/i });
     await user.click(machineClassRadios[1]);
     await selectOption(user, /^machine class$/i, 'beefy');
