@@ -13,7 +13,8 @@
     "storybook": "headlamp-plugin storybook",
     "storybook-build": "headlamp-plugin storybook-build",
     "test": "headlamp-plugin test",
-    "i18n": "headlamp-plugin i18n"
+    "i18n": "headlamp-plugin i18n",
+    "test:visual": "node scripts/visual-smoke-test.mjs"
   },
   "keywords": [
     "headlamp",
@@ -35,7 +36,8 @@
     "typescript": "5.9.3"
   },
   "devDependencies": {
-    "@kinvolk/headlamp-plugin": "0.14.0"
+    "@kinvolk/headlamp-plugin": "0.14.0",
+    "playwright": "^1.62.1"
   },
   "dependencies": {
     "openpgp": "^6.3.1"

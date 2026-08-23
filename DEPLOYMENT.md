@@ -32,6 +32,26 @@ The most common first-time-setup mistake is setting one of these and forgetting 
 
 ## Server / Docker deployment
 
+**Prebuilt image**: `deploy/Dockerfile` bakes this plugin directly into the official Headlamp server image (multi-stage: builds the plugin, then `COPY`s the bundle into `/headlamp/plugins/omni-manager/`) — no manual plugins-dir copy step. Run it via `deploy/docker-compose.yml`:
+
+```bash
+export KUBECONFIG_PATH=$HOME/.kube/config
+export OMNI_PROXY_URL="https://your-omni-instance.example.com/*"
+docker compose -f deploy/docker-compose.yml up --build
+```
+
+That sets `-proxy-urls` for you; the plugin's own "Omni endpoint" setting (below) is still a separate, one-time step in the browser.
+
+Building/running the image manually instead of via compose:
+
+```bash
+docker build -f deploy/Dockerfile -t omni-manager-headlamp .
+docker run -p 4466:4466 -v "$KUBECONFIG_PATH:/home/headlamp/.kube/config:ro" \
+  omni-manager-headlamp \
+  -in-cluster=false -kubeconfig=/home/headlamp/.kube/config \
+  -proxy-urls "https://your-omni-instance.example.com/*"
+```
+
 Add your Omni instance's URL to the Headlamp server's `-proxy-urls` flag — a comma-separated glob-pattern allowlist. Match the specific instance URL rather than allowlisting broadly:
 
 ```bash
