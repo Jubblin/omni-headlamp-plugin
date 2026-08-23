@@ -78,10 +78,29 @@ async function runAuthenticatedChecks(page, baseUrl, outDir, omniEndpoint, servi
   await keyField.fill(serviceAccountKey);
   await page.getByRole('button', { name: 'Connect' }).click();
 
-  await requireVisible(
-    page.getByRole('button', { name: 'Create Cluster' }),
-    'the authenticated Clusters page (real signed API call succeeding)'
-  );
+  // Docker Compose's embedded DNS resolver (127.0.0.11) can transiently fail
+  // to resolve a sibling service's name in the first few seconds after a
+  // container joins the network ("server misbehaving") -- confirmed live in
+  // CI (2026-08-23), unrelated to this plugin or Omni's own readiness (the
+  // key-wait step already proves Omni itself is long since up by this
+  // point). Retrying is exactly what a person hitting this would do: the
+  // "Can't reach Omni" banner Headlamp shows for this has its own Retry
+  // button.
+  const clustersHeading = page.getByRole('button', { name: 'Create Cluster' });
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      await clustersHeading.waitFor({ state: 'visible', timeout: 5_000 });
+      break;
+    } catch {
+      const retryButton = page.getByRole('button', { name: 'Retry' });
+      if (attempt === 4 || !(await retryButton.isVisible().catch(() => false))) {
+        throw new Error(
+          "Expected the authenticated Clusters page (real signed API call succeeding) to be visible, but it wasn't."
+        );
+      }
+      await retryButton.click();
+    }
+  }
   await page.screenshot({ path: `${outDir}/05-authenticated-clusters.png`, fullPage: true });
 
   await page.getByRole('button', { name: 'Create Cluster' }).click();
