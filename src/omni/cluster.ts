@@ -152,17 +152,59 @@ export interface ClusterCreateInput {
   talosVersion: string;
   kubernetesVersion: string;
   /**
-   * Control plane machine selection is explicit-only (not machine-class
-   * allocation) by design -- see cluster.ts doc / PR description: a
-   * machine-class allocation's count can be "unlimited", which makes the
-   * control-plane-count-must-be-odd rule (etcd requirement) impossible to
-   * validate client-side. Real Omni's frontend does allow machine-class
-   * allocation for control planes too; this plugin narrows that for the
-   * sake of being able to actually enforce the parity check.
+   * Same options as `worker` -- mirrors Omni's own web UI, which allows
+   * machine-class allocation for control planes too. The odd-count etcd
+   * requirement (validateClusterCreateInput) is only checkable when the
+   * count is known client-side: an explicit list's length, or a
+   * machineClass selection's fixed count. A machineClass count of
+   * 'unlimited' skips that check, same as Omni's own UI doesn't block it
+   * either -- it's on the operator to keep the matching pool odd-sized.
    */
-  controlPlane: { machineIds: string[] };
+  controlPlane: MachineSelection;
   /** Omitted entirely => no worker MachineSet is created at all. */
   worker?: MachineSelection;
+}
+
+/** Builds a MachineSet (+ its MachineSetNodes, if explicit) for one role -- control plane or worker. */
+function buildMachineSetResources(
+  clusterName: string,
+  machineSetId: string,
+  roleLabel: string,
+  selection: MachineSelection
+): PlannedResource[] {
+  const spec: MachineSetSpec = { update_strategy: 1 };
+  if (selection.kind === 'machineClass') {
+    spec.machine_allocation =
+      selection.count === 'unlimited'
+        ? { name: selection.name, allocation_type: 1 }
+        : { name: selection.name, machine_count: selection.count };
+  }
+
+  const resources: PlannedResource[] = [
+    {
+      type: 'MachineSets.omni.sidero.dev',
+      id: machineSetId,
+      labels: { [LABEL_CLUSTER]: clusterName, [roleLabel]: '' },
+      spec,
+    },
+  ];
+
+  if (selection.kind === 'explicit') {
+    for (const machineId of selection.machineIds) {
+      resources.push({
+        type: 'MachineSetNodes.omni.sidero.dev',
+        id: machineId,
+        labels: {
+          [LABEL_CLUSTER]: clusterName,
+          [LABEL_MACHINE_SET]: machineSetId,
+          [roleLabel]: '',
+        },
+        spec: {} satisfies MachineSetNodeSpec,
+      });
+    }
+  }
+
+  return resources;
 }
 
 /** Builds the full resource graph for a new cluster, already sorted into the canonical creation order. */
@@ -178,58 +220,24 @@ export function buildClusterResourceGraph(input: ClusterCreateInput): PlannedRes
     } satisfies ClusterSpec,
   });
 
-  const cpId = controlPlaneMachineSetId(input.name);
-  resources.push({
-    type: 'MachineSets.omni.sidero.dev',
-    id: cpId,
-    labels: { [LABEL_CLUSTER]: input.name, [LABEL_ROLE_CONTROLPLANE]: '' },
-    spec: { update_strategy: 1 } satisfies MachineSetSpec,
-  });
-  for (const machineId of input.controlPlane.machineIds) {
-    resources.push({
-      type: 'MachineSetNodes.omni.sidero.dev',
-      id: machineId,
-      labels: {
-        [LABEL_CLUSTER]: input.name,
-        [LABEL_MACHINE_SET]: cpId,
-        [LABEL_ROLE_CONTROLPLANE]: '',
-      },
-      spec: {} satisfies MachineSetNodeSpec,
-    });
-  }
+  resources.push(
+    ...buildMachineSetResources(
+      input.name,
+      controlPlaneMachineSetId(input.name),
+      LABEL_ROLE_CONTROLPLANE,
+      input.controlPlane
+    )
+  );
 
   if (input.worker) {
-    const workerId = workersMachineSetId(input.name);
-    const workerSpec: MachineSetSpec = { update_strategy: 1 };
-
-    if (input.worker.kind === 'machineClass') {
-      workerSpec.machine_allocation =
-        input.worker.count === 'unlimited'
-          ? { name: input.worker.name, allocation_type: 1 }
-          : { name: input.worker.name, machine_count: input.worker.count };
-    }
-
-    resources.push({
-      type: 'MachineSets.omni.sidero.dev',
-      id: workerId,
-      labels: { [LABEL_CLUSTER]: input.name, [LABEL_ROLE_WORKER]: '' },
-      spec: workerSpec,
-    });
-
-    if (input.worker.kind === 'explicit') {
-      for (const machineId of input.worker.machineIds) {
-        resources.push({
-          type: 'MachineSetNodes.omni.sidero.dev',
-          id: machineId,
-          labels: {
-            [LABEL_CLUSTER]: input.name,
-            [LABEL_MACHINE_SET]: workerId,
-            [LABEL_ROLE_WORKER]: '',
-          },
-          spec: {} satisfies MachineSetNodeSpec,
-        });
-      }
-    }
+    resources.push(
+      ...buildMachineSetResources(
+        input.name,
+        workersMachineSetId(input.name),
+        LABEL_ROLE_WORKER,
+        input.worker
+      )
+    );
   }
 
   return [...resources].sort(
@@ -291,11 +299,23 @@ export function validateClusterCreateInput(
     } is not compatible with Talos ${input.talosVersion || '(selected version)'}.`;
   }
 
-  const cpCount = input.controlPlane.machineIds.length;
-  if (cpCount === 0) {
+  if (input.controlPlane.kind === 'explicit' && input.controlPlane.machineIds.length === 0) {
     errors.controlPlane = 'At least one control plane machine is required.';
-  } else if (cpCount % 2 === 0) {
-    errors.controlPlane = `Control plane count must be odd (etcd requirement) -- got ${cpCount}.`;
+  } else if (input.controlPlane.kind === 'machineClass' && !input.controlPlane.name) {
+    errors.controlPlane = 'Select a machine class to allocate control planes from.';
+  } else {
+    // Only checkable when the count is known client-side -- see the
+    // `controlPlane` field's doc comment on ClusterCreateInput for why
+    // 'unlimited' skips this.
+    const cpCount =
+      input.controlPlane.kind === 'explicit'
+        ? input.controlPlane.machineIds.length
+        : input.controlPlane.count;
+    if (cpCount !== 'unlimited' && (Number.isNaN(cpCount) || cpCount < 1)) {
+      errors.controlPlane = 'Control plane count must be at least 1.';
+    } else if (cpCount !== 'unlimited' && cpCount % 2 === 0) {
+      errors.controlPlane = `Control plane count must be odd (etcd requirement) -- got ${cpCount}.`;
+    }
   }
 
   if (input.worker?.kind === 'explicit' && input.worker.machineIds.length === 0) {

@@ -63,7 +63,84 @@ type SubmitState =
   | { kind: 'submitting'; step: string }
   | { kind: 'error'; message: string; clusterResourceCreated: boolean };
 
-type WorkerMode = 'none' | 'explicit' | 'machineClass';
+type MachineSelectionMode = 'explicit' | 'machineClass';
+type WorkerMode = 'none' | MachineSelectionMode;
+
+/** Shared UI for the "explicit machine class" half of a machine selection -- used by both
+ * control plane and worker sections, which offer identical machine-class options. */
+function MachineClassAllocationFields({
+  machineClasses,
+  machineClass,
+  onMachineClassChange,
+  countText,
+  onCountTextChange,
+  unlimited,
+  onUnlimitedChange,
+  error,
+  disabled,
+  idPrefix,
+}: {
+  machineClasses: OmniResource<MachineClassSpec>[];
+  machineClass: string;
+  onMachineClassChange: (value: string) => void;
+  countText: string;
+  onCountTextChange: (value: string) => void;
+  unlimited: boolean;
+  onUnlimitedChange: (value: boolean) => void;
+  error?: string;
+  disabled: boolean;
+  idPrefix: string;
+}) {
+  return (
+    <Stack spacing={2} sx={{ mt: 1 }}>
+      <FormControl fullWidth error={!!error} disabled={disabled}>
+        <InputLabel id={`${idPrefix}-mc-label`}>Machine class</InputLabel>
+        <Select
+          labelId={`${idPrefix}-mc-label`}
+          label="Machine class"
+          value={machineClass}
+          onChange={e => onMachineClassChange(e.target.value as string)}
+        >
+          {machineClasses.map(mc => (
+            <MenuItem key={mc.metadata.id} value={mc.metadata.id}>
+              {mc.metadata.id}
+            </MenuItem>
+          ))}
+        </Select>
+        {machineClasses.length === 0 && (
+          <Typography variant="caption" color="text.secondary">
+            No machine classes exist yet — create one under Machine Classes first.
+          </Typography>
+        )}
+        {error && (
+          <Typography variant="caption" color="error">
+            {error}
+          </Typography>
+        )}
+      </FormControl>
+      <Stack direction="row" spacing={2} alignItems="center">
+        <TextField
+          label="Count"
+          type="number"
+          value={countText}
+          onChange={e => onCountTextChange(e.target.value)}
+          disabled={disabled || unlimited}
+          sx={{ width: 120 }}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={unlimited}
+              onChange={e => onUnlimitedChange(e.target.checked)}
+              disabled={disabled}
+            />
+          }
+          label="Unlimited (allocate all matching machines)"
+        />
+      </Stack>
+    </Stack>
+  );
+}
 
 /** Splits a textarea of one-machine-id-per-line into a clean, de-duplicated list. */
 function parseMachineIds(text: string): string[] {
@@ -85,7 +162,11 @@ export function ClusterCreate() {
   const [name, setName] = useState('');
   const [talosVersion, setTalosVersion] = useState('');
   const [kubernetesVersion, setKubernetesVersion] = useState('');
+  const [controlPlaneMode, setControlPlaneMode] = useState<MachineSelectionMode>('explicit');
   const [controlPlaneMachinesText, setControlPlaneMachinesText] = useState('');
+  const [controlPlaneMachineClass, setControlPlaneMachineClass] = useState('');
+  const [controlPlaneCountText, setControlPlaneCountText] = useState('1');
+  const [controlPlaneUnlimited, setControlPlaneUnlimited] = useState(false);
   const [workerMode, setWorkerMode] = useState<WorkerMode>('none');
   const [workerMachinesText, setWorkerMachinesText] = useState('');
   const [workerMachineClass, setWorkerMachineClass] = useState('');
@@ -136,8 +217,19 @@ export function ClusterCreate() {
   const compatibleKubernetesVersions = selectedTalos?.spec.compatible_kubernetes_versions ?? [];
 
   const controlPlaneMachineIds = parseMachineIds(controlPlaneMachinesText);
+  const controlPlaneCount =
+    controlPlaneCountText.trim() === '' ? Number.NaN : Number(controlPlaneCountText);
   const workerMachineIds = parseMachineIds(workerMachinesText);
   const workerCount = workerCountText.trim() === '' ? Number.NaN : Number(workerCountText);
+
+  const controlPlane: MachineSelection =
+    controlPlaneMode === 'machineClass'
+      ? {
+          kind: 'machineClass',
+          name: controlPlaneMachineClass,
+          count: controlPlaneUnlimited ? 'unlimited' : controlPlaneCount,
+        }
+      : { kind: 'explicit', machineIds: controlPlaneMachineIds };
 
   let worker: MachineSelection | undefined;
   if (workerMode === 'explicit') {
@@ -154,7 +246,7 @@ export function ClusterCreate() {
     name,
     talosVersion,
     kubernetesVersion,
-    controlPlane: { machineIds: controlPlaneMachineIds },
+    controlPlane,
     worker,
   };
 
@@ -275,20 +367,65 @@ export function ClusterCreate() {
           )}
         </FormControl>
 
-        <TextField
-          label="Control plane machine UUIDs (one per line)"
-          value={controlPlaneMachinesText}
-          onChange={e => setControlPlaneMachinesText(e.target.value)}
-          multiline
-          minRows={2}
-          error={!!errors.controlPlane}
-          helperText={
-            errors.controlPlane ||
-            `${controlPlaneMachineIds.length} machine(s) — must be an odd count (etcd requirement).`
-          }
-          disabled={submitting}
-          fullWidth
-        />
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            Control plane
+          </Typography>
+          <RadioGroup
+            row
+            value={controlPlaneMode}
+            onChange={e => setControlPlaneMode(e.target.value as MachineSelectionMode)}
+          >
+            <FormControlLabel
+              value="explicit"
+              control={<Radio disabled={submitting} />}
+              label="Explicit machines"
+            />
+            <FormControlLabel
+              value="machineClass"
+              control={<Radio disabled={submitting} />}
+              label="Machine class allocation"
+            />
+          </RadioGroup>
+
+          {controlPlaneMode === 'explicit' && (
+            <TextField
+              label="Control plane machine UUIDs (one per line)"
+              value={controlPlaneMachinesText}
+              onChange={e => setControlPlaneMachinesText(e.target.value)}
+              multiline
+              minRows={2}
+              error={!!errors.controlPlane}
+              helperText={
+                errors.controlPlane ||
+                `${controlPlaneMachineIds.length} machine(s) — must be an odd count (etcd requirement).`
+              }
+              disabled={submitting}
+              fullWidth
+              sx={{ mt: 1 }}
+            />
+          )}
+
+          {controlPlaneMode === 'machineClass' && (
+            <MachineClassAllocationFields
+              machineClasses={machineClasses}
+              machineClass={controlPlaneMachineClass}
+              onMachineClassChange={setControlPlaneMachineClass}
+              countText={controlPlaneCountText}
+              onCountTextChange={setControlPlaneCountText}
+              unlimited={controlPlaneUnlimited}
+              onUnlimitedChange={setControlPlaneUnlimited}
+              error={errors.controlPlane}
+              disabled={submitting}
+              idPrefix="control-plane"
+            />
+          )}
+          {controlPlaneMode === 'machineClass' && !errors.controlPlane && !controlPlaneUnlimited && (
+            <Typography variant="caption" color="text.secondary">
+              Count must be odd (etcd requirement).
+            </Typography>
+          )}
+        </Box>
 
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -328,53 +465,18 @@ export function ClusterCreate() {
           )}
 
           {workerMode === 'machineClass' && (
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <FormControl fullWidth error={!!errors.worker} disabled={submitting}>
-                <InputLabel id="worker-mc-label">Machine class</InputLabel>
-                <Select
-                  labelId="worker-mc-label"
-                  label="Machine class"
-                  value={workerMachineClass}
-                  onChange={e => setWorkerMachineClass(e.target.value as string)}
-                >
-                  {machineClasses.map(mc => (
-                    <MenuItem key={mc.metadata.id} value={mc.metadata.id}>
-                      {mc.metadata.id}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {machineClasses.length === 0 && (
-                  <Typography variant="caption" color="text.secondary">
-                    No machine classes exist yet — create one under Machine Classes first.
-                  </Typography>
-                )}
-                {errors.worker && (
-                  <Typography variant="caption" color="error">
-                    {errors.worker}
-                  </Typography>
-                )}
-              </FormControl>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <TextField
-                  label="Count"
-                  type="number"
-                  value={workerCountText}
-                  onChange={e => setWorkerCountText(e.target.value)}
-                  disabled={submitting || workerUnlimited}
-                  sx={{ width: 120 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={workerUnlimited}
-                      onChange={e => setWorkerUnlimited(e.target.checked)}
-                      disabled={submitting}
-                    />
-                  }
-                  label="Unlimited (allocate all matching machines)"
-                />
-              </Stack>
-            </Stack>
+            <MachineClassAllocationFields
+              machineClasses={machineClasses}
+              machineClass={workerMachineClass}
+              onMachineClassChange={setWorkerMachineClass}
+              countText={workerCountText}
+              onCountTextChange={setWorkerCountText}
+              unlimited={workerUnlimited}
+              onUnlimitedChange={setWorkerUnlimited}
+              error={errors.worker}
+              disabled={submitting}
+              idPrefix="worker"
+            />
           )}
         </Box>
 
