@@ -13,7 +13,11 @@
 FROM node@sha256:bde0dae02f2b12d2bce5ee72b2432f0e511767b7b2dc4dd3b064df11ae422fee AS build
 WORKDIR /workspace
 COPY package.json package-lock.json ./
-RUN npm ci
+# --ignore-scripts: same rationale as .github/workflows/ci.yml's identical
+# flag -- verified safe for this dependency tree (tsc/test/build all pass
+# against a clean --ignore-scripts install); otherwise every transitive
+# dependency's install-time script runs unsandboxed during the image build.
+RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build
 
@@ -30,7 +34,11 @@ FROM ghcr.io/headlamp-k8s/headlamp@sha256:db3f0e0fc58d358d41daa3fe7fc852437552c7
 # read by Headlamp's plugin loader) comes from the repo root itself, same
 # as validate's Makefile target does for the release payload.
 #
-# /headlamp/plugins is already owned by the image's non-root `headlamp` user
-# (its own Dockerfile's default USER), so this needs no extra chown/USER
-# switch here.
+# The base image already sets this as its default user -- repeated
+# explicitly so this Dockerfile is correct read on its own (static analysis
+# of just this file can't see the base image's own USER instruction) and
+# doesn't silently start running as root if a future base-image bump ever
+# changes that default.
+USER headlamp
+
 COPY --from=build /workspace/dist/main.js /workspace/package.json /headlamp/plugins/omni-manager/

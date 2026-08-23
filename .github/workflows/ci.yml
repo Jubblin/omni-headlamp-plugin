@@ -52,7 +52,9 @@ jobs:
 
       # Only the smoke-test's own driver needs a real browser -- the plugin
       # bundle itself is built inside deploy/Dockerfile's own Node stage.
-      - run: npx playwright install --with-deps chromium
+      # --no-install: use the playwright devDependency npm ci already
+      # installed above, never fetch a different version on demand.
+      - run: npx --no-install playwright install --with-deps chromium
 
       - run: make screenshots
 
