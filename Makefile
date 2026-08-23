@@ -54,9 +54,10 @@ screenshots:
 	@# genuinely open and accepting connections (confirmed live in CI, 2026-08-23 -- curl -sk
 	@# never once succeeded in 60s even though nothing else pointed at Omni being unhealthy).
 	@deadline=$$(( $$(date +%s) + 60 )); \
-	until bash -c "exec 3<>/dev/tcp/localhost/$${OMNI_HOST_PORT:-8099}" 2>/dev/null; do \
+	until bash -c "exec 3<>/dev/tcp/127.0.0.1/$${OMNI_HOST_PORT:-8099}" 2>/dev/null; do \
 		if [ "$$(date +%s)" -gt "$$deadline" ]; then \
 			echo "Omni API did not become reachable in time" >&2; \
+			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml logs omni | tail -50 >&2; \
 			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
 			exit 1; \
 		fi; \
