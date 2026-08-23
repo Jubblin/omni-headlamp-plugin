@@ -49,8 +49,12 @@ screenshots:
 	@# after the key appears races Omni's own startup and fails every request with "no route
 	@# to host" (confirmed live in CI, 2026-08-23: key appeared in ~1s, API wasn't reachable for
 	@# several more seconds). Poll the published port directly instead of trusting the key alone.
+	@# A raw TCP connect, not an HTTP request: Omni's :8099 is a gRPC endpoint, so a plain GET
+	@# gets an empty/protocol-error reply (curl treats that as failure) even once the port is
+	@# genuinely open and accepting connections (confirmed live in CI, 2026-08-23 -- curl -sk
+	@# never once succeeded in 60s even though nothing else pointed at Omni being unhealthy).
 	@deadline=$$(( $$(date +%s) + 60 )); \
-	until curl -sk --max-time 2 -o /dev/null "https://localhost:$${OMNI_HOST_PORT:-8099}/"; do \
+	until bash -c "exec 3<>/dev/tcp/localhost/$${OMNI_HOST_PORT:-8099}" 2>/dev/null; do \
 		if [ "$$(date +%s)" -gt "$$deadline" ]; then \
 			echo "Omni API did not become reachable in time" >&2; \
 			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
