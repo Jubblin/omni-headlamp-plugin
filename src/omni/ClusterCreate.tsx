@@ -162,7 +162,7 @@ export function ClusterCreate() {
   const [name, setName] = useState('');
   const [talosVersion, setTalosVersion] = useState('');
   const [kubernetesVersion, setKubernetesVersion] = useState('');
-  const [controlPlaneMode, setControlPlaneMode] = useState<MachineSelectionMode>('explicit');
+  const [controlPlaneMode, setControlPlaneMode] = useState<MachineSelectionMode>('machineClass');
   const [controlPlaneMachinesText, setControlPlaneMachinesText] = useState('');
   const [controlPlaneMachineClass, setControlPlaneMachineClass] = useState('');
   const [controlPlaneCountText, setControlPlaneCountText] = useState('1');
@@ -200,6 +200,18 @@ export function ClusterCreate() {
         b.metadata.id.localeCompare(a.metadata.id, undefined, { numeric: true })
       );
       setState({ kind: 'ready', talosVersions, machineClasses });
+
+      // Default to the latest non-deprecated Talos version (falling back to the latest overall
+      // if everything's deprecated) and, within it, the latest compatible Kubernetes version --
+      // mirrors what a user would pick themselves, without forcing them to.
+      const defaultTalos = talosVersions.find(v => !v.spec.deprecated) ?? talosVersions[0];
+      if (defaultTalos) {
+        setTalosVersion(defaultTalos.metadata.id);
+        const compatible = [...(defaultTalos.spec.compatible_kubernetes_versions ?? [])].sort(
+          (a, b) => b.localeCompare(a, undefined, { numeric: true })
+        );
+        if (compatible[0]) setKubernetesVersion(compatible[0]);
+      }
     } catch (err) {
       const message = err instanceof OmniConnectionError ? err.message : String(err);
       setState({ kind: 'connection-error', message });
