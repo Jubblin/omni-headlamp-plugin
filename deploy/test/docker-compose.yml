@@ -43,6 +43,13 @@ services:
     image: ghcr.io/siderolabs/omni:latest
     cap_add:
       - NET_ADMIN
+    # NET_ADMIN alone isn't enough -- Omni also needs the TUN device itself to bring up its
+    # WireGuard-based siderolink networking. Without this it crash-loops on startup with
+    # "CreateTUN(\"siderolink\") failed; /dev/net/tun does not exist" (confirmed live in CI,
+    # 2026-08-23), which made :8099 flap open/closed instead of settling -- every readiness
+    # check against it (HTTP, then raw TCP) failed no matter how it waited.
+    devices:
+      - /dev/net/tun
     command: ['--config-path=/etc/omni/config.yaml']
     volumes:
       - ./omni-config.yaml:/etc/omni/config.yaml:ro
