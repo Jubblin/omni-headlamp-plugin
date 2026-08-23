@@ -46,7 +46,11 @@ function renderCreate() {
 }
 
 /** Picks an option from an MUI Select identified by its visible label. */
-async function selectOption(user: ReturnType<typeof userEvent.setup>, label: string | RegExp, optionName: string) {
+async function selectOption(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string | RegExp,
+  optionName: string
+) {
   await user.click(screen.getByLabelText(label));
   const listbox = await screen.findByRole('listbox');
   await user.click(within(listbox).getByRole('option', { name: optionName }));

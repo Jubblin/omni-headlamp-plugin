@@ -420,11 +420,13 @@ export function ClusterCreate() {
               idPrefix="control-plane"
             />
           )}
-          {controlPlaneMode === 'machineClass' && !errors.controlPlane && !controlPlaneUnlimited && (
-            <Typography variant="caption" color="text.secondary">
-              Count must be odd (etcd requirement).
-            </Typography>
-          )}
+          {controlPlaneMode === 'machineClass' &&
+            !errors.controlPlane &&
+            !controlPlaneUnlimited && (
+              <Typography variant="caption" color="text.secondary">
+                Count must be odd (etcd requirement).
+              </Typography>
+            )}
         </Box>
 
         <Box>

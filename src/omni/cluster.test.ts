@@ -12,7 +12,11 @@ vi.mock('@kinvolk/headlamp-plugin/lib', () => ({
   ApiProxy: { request: vi.fn() },
 }));
 
-import { buildClusterResourceGraph, ClusterCreateInput, validateClusterCreateInput } from './cluster';
+import {
+  buildClusterResourceGraph,
+  ClusterCreateInput,
+  validateClusterCreateInput,
+} from './cluster';
 
 const baseInput: ClusterCreateInput = {
   name: 'test-cluster',

@@ -209,36 +209,30 @@ function buildMachineSetResources(
 
 /** Builds the full resource graph for a new cluster, already sorted into the canonical creation order. */
 export function buildClusterResourceGraph(input: ClusterCreateInput): PlannedResource[] {
-  const resources: PlannedResource[] = [];
-
-  resources.push({
-    type: 'Clusters.omni.sidero.dev',
-    id: input.name,
-    spec: {
-      talos_version: input.talosVersion,
-      kubernetes_version: input.kubernetesVersion,
-    } satisfies ClusterSpec,
-  });
-
-  resources.push(
+  const resources: PlannedResource[] = [
+    {
+      type: 'Clusters.omni.sidero.dev',
+      id: input.name,
+      spec: {
+        talos_version: input.talosVersion,
+        kubernetes_version: input.kubernetesVersion,
+      } satisfies ClusterSpec,
+    },
     ...buildMachineSetResources(
       input.name,
       controlPlaneMachineSetId(input.name),
       LABEL_ROLE_CONTROLPLANE,
       input.controlPlane
-    )
-  );
-
-  if (input.worker) {
-    resources.push(
-      ...buildMachineSetResources(
-        input.name,
-        workersMachineSetId(input.name),
-        LABEL_ROLE_WORKER,
-        input.worker
-      )
-    );
-  }
+    ),
+    ...(input.worker
+      ? buildMachineSetResources(
+          input.name,
+          workersMachineSetId(input.name),
+          LABEL_ROLE_WORKER,
+          input.worker
+        )
+      : []),
+  ];
 
   return [...resources].sort(
     (a, b) => (CANONICAL_RESOURCE_ORDER[a.type] ?? 0) - (CANONICAL_RESOURCE_ORDER[b.type] ?? 0)
@@ -256,6 +250,35 @@ export interface ClusterFormErrors {
 /** Loose semver-ish check -- good enough to catch typos before they round-trip to the server; matches ClusterValidator's semver.ParseTolerant intent without pulling in a semver dependency. */
 function looksLikeVersion(v: string): boolean {
   return /^\d+\.\d+\.\d+/.test(v.replace(/^v/, ''));
+}
+
+/**
+ * Validates a control plane's MachineSelection against the etcd odd-count
+ * requirement. Only checkable when the count is known client-side -- see
+ * the `controlPlane` field's doc comment on ClusterCreateInput for why
+ * 'unlimited' skips this. Split out of validateClusterCreateInput to keep
+ * that function's branching flat.
+ */
+function validateControlPlane(controlPlane: MachineSelection): string | undefined {
+  if (controlPlane.kind === 'explicit' && controlPlane.machineIds.length === 0) {
+    return 'At least one control plane machine is required.';
+  }
+  if (controlPlane.kind === 'machineClass' && !controlPlane.name) {
+    return 'Select a machine class to allocate control planes from.';
+  }
+
+  const cpCount =
+    controlPlane.kind === 'explicit' ? controlPlane.machineIds.length : controlPlane.count;
+  if (cpCount === 'unlimited') {
+    return undefined;
+  }
+  if (Number.isNaN(cpCount) || cpCount < 1) {
+    return 'Control plane count must be at least 1.';
+  }
+  if (cpCount % 2 === 0) {
+    return `Control plane count must be odd (etcd requirement) -- got ${cpCount}.`;
+  }
+  return undefined;
 }
 
 /**
@@ -299,23 +322,9 @@ export function validateClusterCreateInput(
     } is not compatible with Talos ${input.talosVersion || '(selected version)'}.`;
   }
 
-  if (input.controlPlane.kind === 'explicit' && input.controlPlane.machineIds.length === 0) {
-    errors.controlPlane = 'At least one control plane machine is required.';
-  } else if (input.controlPlane.kind === 'machineClass' && !input.controlPlane.name) {
-    errors.controlPlane = 'Select a machine class to allocate control planes from.';
-  } else {
-    // Only checkable when the count is known client-side -- see the
-    // `controlPlane` field's doc comment on ClusterCreateInput for why
-    // 'unlimited' skips this.
-    const cpCount =
-      input.controlPlane.kind === 'explicit'
-        ? input.controlPlane.machineIds.length
-        : input.controlPlane.count;
-    if (cpCount !== 'unlimited' && (Number.isNaN(cpCount) || cpCount < 1)) {
-      errors.controlPlane = 'Control plane count must be at least 1.';
-    } else if (cpCount !== 'unlimited' && cpCount % 2 === 0) {
-      errors.controlPlane = `Control plane count must be odd (etcd requirement) -- got ${cpCount}.`;
-    }
+  const controlPlaneError = validateControlPlane(input.controlPlane);
+  if (controlPlaneError) {
+    errors.controlPlane = controlPlaneError;
   }
 
   if (input.worker?.kind === 'explicit' && input.worker.machineIds.length === 0) {
