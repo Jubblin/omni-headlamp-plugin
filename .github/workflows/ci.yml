@@ -10,9 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  get-specs:
-    runs-on: ubuntu-latest
-      steps:
   check:
     runs-on: ubuntu-latest
     steps:
