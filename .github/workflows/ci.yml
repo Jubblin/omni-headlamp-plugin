@@ -37,3 +37,31 @@ jobs:
       - run: npm test
 
       - run: npm run build
+
+  visual-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      # Only the smoke-test's own driver needs a real browser -- the plugin
+      # bundle itself is built inside deploy/Dockerfile's own Node stage.
+      - run: npx playwright install --with-deps chromium
+
+      - run: make screenshots
+
+      # Runs whether the smoke test passed or failed -- a failure screenshot
+      # (see scripts/visual-smoke-test.mjs's catch block) is exactly what a
+      # reviewer needs to see when this job goes red.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-screenshots
+          path: screenshots/
+          retention-days: 14
