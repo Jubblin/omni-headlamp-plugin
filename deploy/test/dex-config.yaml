@@ -1,0 +1,23 @@
+# Mock OIDC provider for the disposable test-Omni instance (deploy/test/docker-compose.yml).
+# Omni requires SOME auth provider configured before it will even boot (it refuses to run
+# authless) -- Dex satisfies that requirement via OIDC discovery at Omni's startup. Nobody ever
+# logs in through it: the smoke test authenticates with the bootstrapped service-account key
+# instead (see scripts/visual-smoke-test.mjs), so the static password below is never used for
+# anything -- it's a well-known Dex example value, not a real credential.
+issuer: http://dex:8080/dex
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:8080
+staticClients:
+  - id: omni
+    redirectURIs:
+      - 'https://omni:8099/oidc/consume'
+    name: 'Omni'
+    secret: ZXhhbXBsZR1hcHAtc2VjcmV0
+enablePasswordDB: true
+staticPasswords:
+  - email: test-user@test.local
+    hash: '$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+    username: 'test-user'
+    userID: '1234'
