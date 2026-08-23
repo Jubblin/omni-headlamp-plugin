@@ -42,6 +42,16 @@ services:
     build:
       context: ../..
       dockerfile: deploy/Dockerfile
+    environment:
+      # Go's crypto/x509 reads this to trust omni's self-signed cert for the
+      # /externalproxy call the "Connect to Omni" flow makes -- omni:8099 is
+      # the only host -proxy-urls ever lets this container reach, so trusting
+      # just this one cert (not merging into the system pool) is sufficient.
+      # Set at container start, not appended+restarted at runtime -- no race
+      # with the smoke test's first request.
+      SSL_CERT_FILE: /certs/omni.pem
+    volumes:
+      - ./.generated/certs:/certs:ro
     command:
       - -in-cluster=false
       - -kubeconfig=/dev/null

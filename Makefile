@@ -43,10 +43,6 @@ screenshots:
 		sleep 2; \
 	done; \
 	echo "$$KEY" > /tmp/omni-manager-smoke-test-key
-	@echo "Trusting the disposable instance's self-signed cert (see deploy/Dockerfile's Alpine base -- no update-ca-certificates, so this appends directly) and restarting Headlamp to pick it up..."
-	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml exec -T -u root headlamp \
-		sh -c 'cat >> /etc/ssl/certs/ca-certificates.crt' < deploy/test/.generated/certs/omni.pem
-	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml restart headlamp
 	@echo "Waiting for Headlamp to come up..."
 	@for i in $$(seq 1 30); do \
 		curl -sf -o /dev/null http://localhost:4466/ && break; \
