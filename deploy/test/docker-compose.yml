@@ -3,12 +3,28 @@
 # Makefile), which generates the throwaway credentials this depends on first
 # (scripts/setup-test-omni.sh) -- don't run `docker compose up` here directly without that step,
 # deploy/test/.generated/ won't exist yet.
+# Static subnet + fixed IPs so headlamp resolves "omni" via /etc/hosts
+# (extra_hosts below) instead of Docker's embedded DNS resolver
+# (127.0.0.11) -- that resolver intermittently answered "server misbehaving"
+# for a sibling service's name in CI (2026-08-23, reproduced 2/2 runs, every
+# retry over 15+ seconds, so not a one-off blip), a known class of flakiness
+# on some Docker/network-driver combinations. /etc/hosts lookups never touch
+# that resolver at all.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
 services:
   dex:
     image: dexidp/dex:v2.41.1
     command: ['dex', 'serve', '/etc/dex/config.yaml']
     volumes:
       - ./dex-config.yaml:/etc/dex/config.yaml:ro
+    networks:
+      default:
+        ipv4_address: 172.28.0.2
     healthcheck:
       test:
         [
@@ -32,6 +48,9 @@ services:
       - ./omni-config.yaml:/etc/omni/config.yaml:ro
       - ./.generated/certs:/certs:ro
       - omni-out:/out
+    networks:
+      default:
+        ipv4_address: 172.28.0.3
     ports:
       - '${OMNI_HOST_PORT:-8099}:8099'
     depends_on:
@@ -52,6 +71,8 @@ services:
       SSL_CERT_FILE: /certs/omni.pem
     volumes:
       - ./.generated/certs:/certs:ro
+    extra_hosts:
+      - 'omni:172.28.0.3'
     command:
       - -in-cluster=false
       - -kubeconfig=/dev/null
