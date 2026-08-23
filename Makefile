@@ -52,6 +52,10 @@ screenshots:
 	OMNI_ENDPOINT=https://omni:8099 OMNI_SERVICE_ACCOUNT_KEY="$$(cat /tmp/omni-manager-smoke-test-key)" \
 		node scripts/visual-smoke-test.mjs http://localhost:4466; \
 	status=$$?; \
+	if [ "$$status" -ne 0 ]; then \
+		echo "--- headlamp container logs (diagnosing the failure above) ---" >&2; \
+		docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml logs headlamp | tail -80 >&2; \
+	fi; \
 	docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
 	rm -f /tmp/omni-manager-smoke-test-key; \
 	exit $$status
