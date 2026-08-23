@@ -43,6 +43,21 @@ screenshots:
 		sleep 2; \
 	done; \
 	echo "$$KEY" > /tmp/omni-manager-smoke-test-key
+	@echo "Waiting for the Omni API to accept connections..."
+	@# The service-account key (waited for above) is written during Omni's early bootstrap,
+	@# well before its own HTTPS API server on :8099 is actually listening -- proceeding right
+	@# after the key appears races Omni's own startup and fails every request with "no route
+	@# to host" (confirmed live in CI, 2026-08-23: key appeared in ~1s, API wasn't reachable for
+	@# several more seconds). Poll the published port directly instead of trusting the key alone.
+	@deadline=$$(( $$(date +%s) + 60 )); \
+	until curl -sk --max-time 2 -o /dev/null "https://localhost:$${OMNI_HOST_PORT:-8099}/"; do \
+		if [ "$$(date +%s)" -gt "$$deadline" ]; then \
+			echo "Omni API did not become reachable in time" >&2; \
+			docker compose -p omni-manager-smoke-test -f deploy/test/docker-compose.yml down -t 5 -v --remove-orphans >/dev/null 2>&1; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done
 	@echo "Waiting for Headlamp to come up..."
 	@for i in $$(seq 1 30); do \
 		curl -sf -o /dev/null http://localhost:4466/ && break; \
