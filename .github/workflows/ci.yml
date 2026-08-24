@@ -85,12 +85,80 @@ jobs:
 
       - run: make screenshots
 
-      # Runs whether the smoke test passed or failed -- a failure screenshot
-      # (see scripts/visual-smoke-test.mjs's catch block) is exactly what a
-      # reviewer needs to see when this job goes red.
+      # Playwright names the video with a random hash -- give it a fixed name
+      # so it can be uploaded as its own named artifact below, same as every
+      # screenshot. Runs whether the smoke test passed or failed.
+      - name: Rename video to a fixed filename
+        if: always()
+        run: mv screenshots/*.webm screenshots/session-recording.webm 2>/dev/null || true
+
+      # One artifact per file, not one zip of all of them (see issue #29):
+      # GitHub renders a single-file image artifact inline in the Actions UI,
+      # so a reviewer can glance at a screenshot without downloading and
+      # unzipping anything. if-no-files-found: ignore since which files exist
+      # depends on how far scripts/visual-smoke-test.mjs got before failing
+      # (FAILURE.png only exists on a failure; later screenshots don't exist
+      # if it failed on an earlier page).
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: visual-smoke-test-screenshots
-          path: screenshots/
+          name: visual-smoke-test-01-home-sidebar
+          path: screenshots/01-home-sidebar.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-02-omni-clusters
+          path: screenshots/02-omni-clusters.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-03-omni-config-patches
+          path: screenshots/03-omni-config-patches.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-04-settings-plugins
+          path: screenshots/04-settings-plugins.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-05-authenticated-clusters
+          path: screenshots/05-authenticated-clusters.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-06-authenticated-cluster-create
+          path: screenshots/06-authenticated-cluster-create.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-FAILURE
+          path: screenshots/FAILURE.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: visual-smoke-test-recording
+          path: screenshots/session-recording.webm
+          if-no-files-found: ignore
           retention-days: 14
