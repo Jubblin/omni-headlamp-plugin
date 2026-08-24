@@ -12,6 +12,8 @@ import { TextField, Typography } from '@mui/material';
 
 export interface OmniPluginConfig {
   endpoint?: string;
+  /** "owner/repo" or "owner/repo/path/to/patches" -- see github.ts's parsePatchesPath. */
+  githubPatchesPath?: string;
 }
 
 export function OmniSettingsComponent(props: PluginSettingsDetailsProps) {
@@ -19,6 +21,10 @@ export function OmniSettingsComponent(props: PluginSettingsDetailsProps) {
 
   function setEndpoint(value: string) {
     props.onDataChange?.({ ...data, endpoint: value });
+  }
+
+  function setGithubPatchesPath(value: string) {
+    props.onDataChange?.({ ...data, githubPatchesPath: value });
   }
 
   return (
@@ -38,6 +44,19 @@ export function OmniSettingsComponent(props: PluginSettingsDetailsProps) {
         The service account key is entered separately, per browser tab, and is never saved here —
         see the "Connect to Omni" prompt on the Config Patches page.
       </Typography>
+
+      <Typography variant="body2" color="textSecondary" sx={{ mt: 3, mb: 1 }}>
+        GitHub repo to load ConfigPatches from, for the "Load from GitHub" action on a patch's page.
+        Format: <code>owner/repo</code> or <code>owner/repo/path/to/patches</code> (path optional —
+        omitted means repo root).
+      </Typography>
+      <TextField
+        fullWidth
+        label="GitHub patches path"
+        placeholder="owner/repo/path/to/patches"
+        value={data.githubPatchesPath || ''}
+        onChange={e => setGithubPatchesPath(e.target.value)}
+      />
     </div>
   );
 }
