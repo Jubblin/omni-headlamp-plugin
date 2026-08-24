@@ -1,7 +1,7 @@
 // Same ConfigStore-needs-Headlamp's-Redux-store issue as ClusterCreate.test.tsx --
 // mocked out for the same reason.
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -148,8 +148,14 @@ describe('GitHubLoad', () => {
     const user = userEvent.setup();
     renderLoad({ dirty: true });
     await user.click(screen.getByRole('button', { name: /load from github/i }));
+    await screen.findByText('Discard unsaved changes?');
     await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+    // MUI's Dialog keeps its content mounted during the exit transition, so
+    // the title can still be in the DOM for a moment after the click --
+    // waitFor rather than a synchronous assertion avoids racing that.
+    await waitFor(() => {
+      expect(screen.queryByText('Discard unsaved changes?')).not.toBeInTheDocument();
+    });
     expect(screen.queryByText('Connect to GitHub')).not.toBeInTheDocument();
-    expect(screen.queryByText('Discard unsaved changes?')).not.toBeInTheDocument();
   });
 });
