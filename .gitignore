@@ -7,3 +7,5 @@ dist/
 .eslintcache
 screenshots/
 deploy/test/.generated/
+
+.wiki/
