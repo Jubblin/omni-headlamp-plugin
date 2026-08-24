@@ -43,7 +43,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { editor as MonacoEditorNS } from 'monaco-editor';
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, Prompt, useHistory, useParams } from 'react-router-dom';
 import {
   deleteResourceFully,
@@ -96,6 +96,19 @@ export interface ResourceDetailProps<TSpec> {
    * ...") since only they know what "valid" means for their format.
    */
   parseEdit: (text: string, currentSpec: TSpec) => { spec: TSpec } | { error: string };
+  /**
+   * Optional extra action rendered after Apply/Delete in the action row --
+   * used by ConfigPatchDetail only (see GitHubLoad.tsx) to add "Load from
+   * GitHub" without coupling this generic component to that feature.
+   * Receives this component's own `dirty` state and an `onLoad` callback
+   * so the caller's Dialog can guard against discarding an unsaved edit and
+   * feed loaded content back through this component's existing apply flow,
+   * without owning any of that state itself.
+   */
+  renderExtraAction?: (props: {
+    dirty: boolean;
+    onLoad: (text: string, label: string) => void;
+  }) => ReactNode;
 }
 
 export function ResourceDetail<TSpec>({
@@ -106,6 +119,7 @@ export function ResourceDetail<TSpec>({
   language,
   specToText,
   parseEdit,
+  renderExtraAction,
 }: ResourceDetailProps<TSpec>) {
   const { id } = useParams<{ id: string }>();
   const history = useHistory();
@@ -116,7 +130,14 @@ export function ResourceDetail<TSpec>({
   const [deleteState, setDeleteState] = useState<DeleteState>({ kind: 'idle' });
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [summary, setSummary] = useState('No changes.');
+  const [externalLoadInfo, setExternalLoadInfo] = useState<string | null>(null);
   const diffEditorRef = useRef<MonacoEditorNS.IStandaloneDiffEditor | null>(null);
+
+  /** Fed to renderExtraAction's onLoad -- e.g. GitHubLoad.tsx after fetching a file's content. */
+  function handleExternalLoad(text: string, label: string) {
+    setModifiedText(text);
+    setExternalLoadInfo(label);
+  }
 
   // Fetches the resource and updates `state`, but never touches
   // `modifiedText`. Used by the conflict-reload path, where the whole point
@@ -335,6 +356,7 @@ export function ResourceDetail<TSpec>({
         >
           Delete
         </Button>
+        {renderExtraAction?.({ dirty, onLoad: handleExternalLoad })}
       </Stack>
 
       {parseErrorMessage && (
@@ -363,6 +385,12 @@ export function ResourceDetail<TSpec>({
       {applyState.kind === 'error' && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setApplyState({ kind: 'idle' })}>
           {applyState.message}
+        </Alert>
+      )}
+      {externalLoadInfo && (
+        <Alert severity="info" sx={{ mb: 2 }} onClose={() => setExternalLoadInfo(null)}>
+          Loaded {externalLoadInfo} — this is a snapshot, not a live sync. Edits here won't be
+          reflected back to GitHub.
         </Alert>
       )}
 
