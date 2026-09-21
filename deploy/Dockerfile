@@ -10,7 +10,7 @@
 # (see that file's comment for why -- host/CI Node 26+ breaks this project's
 # toolchain via yargs ESM/CJS interop and rollup's native bindings).
 # Tag: node:24-bookworm-slim
-FROM node@sha256:e961046fec20896e8904f2b4a8b4c7e5ca91826d84d8d33d83dbaa61f942069e AS build
+FROM node@sha256:fa271c47a5d81dc321f4a45be01362f5b3de7559edc7e76b8c4089be1e50d866 AS build
 WORKDIR /workspace
 COPY package.json package-lock.json ./
 # --ignore-scripts: same rationale as .github/workflows/ci.yml's identical
